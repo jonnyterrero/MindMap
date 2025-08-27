@@ -22,6 +22,8 @@ if 'messages' not in st.session_state:
     st.session_state.messages = []
 if 'demo_mode' not in st.session_state:
     st.session_state.demo_mode = True  # Default to demo mode for cloud deployment
+if 'body_symptoms' not in st.session_state:
+    st.session_state.body_symptoms = {}
 
 def show_demo_data():
     """Show demo data for the application."""
@@ -166,29 +168,198 @@ def show_profile_management():
             st.info("🎮 Demo mode: This is a demonstration. In a real app, this would save to the database.")
 
 def show_body_map():
-    """Display body map interface."""
-    st.header("🗺️ Body Map")
+    """Display interactive body map interface."""
+    st.header("🗺️ Interactive Body Map")
     
-    st.info("This feature provides an interactive body map for tracking symptoms and pain locations.")
+    st.info("Click on different body regions to track symptoms and pain locations.")
     
-    # Body map visualization placeholder
+    # Body map layout
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        st.image("https://via.placeholder.com/600x400?text=Interactive+Body+Map", 
-                 caption="Interactive Body Map - Click to mark symptoms")
+        st.subheader("👤 Click on Body Regions")
+        
+        # Create interactive body map using buttons arranged in body shape
+        # Head
+        if st.button("🧠 Head", key="head", use_container_width=True):
+            st.session_state.selected_region = "head"
+            st.rerun()
+        
+        # Neck
+        if st.button("👔 Neck", key="neck", use_container_width=True):
+            st.session_state.selected_region = "neck"
+            st.rerun()
+        
+        # Shoulders
+        col_shoulder1, col_shoulder2 = st.columns(2)
+        with col_shoulder1:
+            if st.button("💪 Left Shoulder", key="left_shoulder"):
+                st.session_state.selected_region = "left_shoulder"
+                st.rerun()
+        with col_shoulder2:
+            if st.button("💪 Right Shoulder", key="right_shoulder"):
+                st.session_state.selected_region = "right_shoulder"
+                st.rerun()
+        
+        # Arms
+        col_arm1, col_arm2 = st.columns(2)
+        with col_arm1:
+            if st.button("🦾 Left Arm", key="left_arm"):
+                st.session_state.selected_region = "left_arm"
+                st.rerun()
+        with col_arm2:
+            if st.button("🦾 Right Arm", key="right_arm"):
+                st.session_state.selected_region = "right_arm"
+                st.rerun()
+        
+        # Chest
+        if st.button("🫁 Chest", key="chest", use_container_width=True):
+            st.session_state.selected_region = "chest"
+            st.rerun()
+        
+        # Stomach
+        if st.button("🤰 Stomach", key="stomach", use_container_width=True):
+            st.session_state.selected_region = "stomach"
+            st.rerun()
+        
+        # Back
+        if st.button("🫂 Back", key="back", use_container_width=True):
+            st.session_state.selected_region = "back"
+            st.rerun()
+        
+        # Legs
+        col_leg1, col_leg2 = st.columns(2)
+        with col_leg1:
+            if st.button("🦵 Left Leg", key="left_leg"):
+                st.session_state.selected_region = "left_leg"
+                st.rerun()
+        with col_leg2:
+            if st.button("🦵 Right Leg", key="right_leg"):
+                st.session_state.selected_region = "right_leg"
+                st.rerun()
+        
+        # Feet
+        col_foot1, col_foot2 = st.columns(2)
+        with col_foot1:
+            if st.button("🦶 Left Foot", key="left_foot"):
+                st.session_state.selected_region = "left_foot"
+                st.rerun()
+        with col_foot2:
+            if st.button("🦶 Right Foot", key="right_foot"):
+                st.session_state.selected_region = "right_foot"
+                st.rerun()
     
     with col2:
-        st.subheader("Symptom Tracker")
+        st.subheader("📝 Symptom Tracker")
         
-        # Symptom selection
-        symptom = st.selectbox("Select Symptom", ["headache", "nausea", "pain", "fatigue", "dizziness"])
-        intensity = st.slider("Intensity (1-10)", 1, 10, 5)
-        location = st.selectbox("Body Location", ["head", "neck", "chest", "stomach", "back", "arms", "legs"])
+        # Show selected region
+        if 'selected_region' in st.session_state:
+            st.success(f"Selected: **{st.session_state.selected_region.replace('_', ' ').title()}**")
+            
+            # Symptom form for selected region
+            with st.form(f"symptom_form_{st.session_state.selected_region}"):
+                symptom_type = st.selectbox(
+                    "Symptom Type",
+                    ["pain", "headache", "nausea", "fatigue", "dizziness", "swelling", "itching", "burning", "numbness", "other"],
+                    key=f"symptom_type_{st.session_state.selected_region}"
+                )
+                
+                intensity = st.slider("Intensity (1-10)", 1, 10, 5, key=f"intensity_{st.session_state.selected_region}")
+                
+                duration = st.selectbox(
+                    "Duration",
+                    ["just started", "few minutes", "few hours", "all day", "few days", "week+"],
+                    key=f"duration_{st.session_state.selected_region}"
+                )
+                
+                notes = st.text_area("Notes", key=f"notes_{st.session_state.selected_region}")
+                
+                col_add, col_clear = st.columns(2)
+                with col_add:
+                    if st.form_submit_button("➕ Add Symptom"):
+                        # Add symptom to session state
+                        if st.session_state.selected_region not in st.session_state.body_symptoms:
+                            st.session_state.body_symptoms[st.session_state.selected_region] = []
+                        
+                        new_symptom = {
+                            "type": symptom_type,
+                            "intensity": intensity,
+                            "duration": duration,
+                            "notes": notes,
+                            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M")
+                        }
+                        
+                        st.session_state.body_symptoms[st.session_state.selected_region].append(new_symptom)
+                        st.success(f"✅ Added {symptom_type} to {st.session_state.selected_region}")
+                        st.rerun()
+                
+                with col_clear:
+                    if st.form_submit_button("🗑️ Clear Region"):
+                        if st.session_state.selected_region in st.session_state.body_symptoms:
+                            del st.session_state.body_symptoms[st.session_state.selected_region]
+                        st.success(f"✅ Cleared symptoms from {st.session_state.selected_region}")
+                        st.rerun()
+        else:
+            st.info("👆 Click on a body region above to start tracking symptoms")
+    
+    # Display current symptoms
+    if st.session_state.body_symptoms:
+        st.subheader("📊 Current Symptoms")
         
-        if st.button("Add Symptom"):
-            st.success(f"✅ Added {symptom} (intensity: {intensity}) to {location}")
-            st.info("🎮 Demo mode: This is a demonstration.")
+        for region, symptoms in st.session_state.body_symptoms.items():
+            with st.expander(f"📍 {region.replace('_', ' ').title()} ({len(symptoms)} symptoms)"):
+                for i, symptom in enumerate(symptoms):
+                    col1, col2, col3 = st.columns([2, 1, 1])
+                    with col1:
+                        st.write(f"**{symptom['type'].title()}** - Intensity: {symptom['intensity']}/10")
+                        st.write(f"Duration: {symptom['duration']}")
+                        if symptom['notes']:
+                            st.write(f"Notes: {symptom['notes']}")
+                    with col2:
+                        st.write(f"Added: {symptom['timestamp']}")
+                    with col3:
+                        if st.button(f"❌ Remove", key=f"remove_{region}_{i}"):
+                            st.session_state.body_symptoms[region].pop(i)
+                            if not st.session_state.body_symptoms[region]:
+                                del st.session_state.body_symptoms[region]
+                            st.rerun()
+                    st.divider()
+    
+    # Summary statistics
+    if st.session_state.body_symptoms:
+        st.subheader("📈 Symptom Summary")
+        
+        total_symptoms = sum(len(symptoms) for symptoms in st.session_state.body_symptoms.values())
+        avg_intensity = 0
+        symptom_count = 0
+        
+        for symptoms in st.session_state.body_symptoms.values():
+            for symptom in symptoms:
+                avg_intensity += symptom['intensity']
+                symptom_count += 1
+        
+        if symptom_count > 0:
+            avg_intensity = avg_intensity / symptom_count
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Total Symptoms", total_symptoms)
+        with col2:
+            st.metric("Affected Regions", len(st.session_state.body_symptoms))
+        with col3:
+            st.metric("Avg Intensity", f"{avg_intensity:.1f}/10")
+        
+        # Most common symptoms
+        symptom_types = {}
+        for symptoms in st.session_state.body_symptoms.values():
+            for symptom in symptoms:
+                symptom_type = symptom['type']
+                symptom_types[symptom_type] = symptom_types.get(symptom_type, 0) + 1
+        
+        if symptom_types:
+            st.write("**Most Common Symptoms:**")
+            for symptom_type, count in sorted(symptom_types.items(), key=lambda x: x[1], reverse=True)[:3]:
+                st.write(f"• {symptom_type.title()}: {count} occurrences")
 
 def show_calendar_view():
     """Display calendar view interface."""
