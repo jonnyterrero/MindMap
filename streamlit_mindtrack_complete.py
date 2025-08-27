@@ -2,6 +2,7 @@
 """
 Comprehensive MindTrack Streamlit Application
 Integrates all features from the FastAPI version into a single Streamlit app.
+Uses only built-in Streamlit components for maximum compatibility.
 """
 
 import streamlit as st
@@ -13,9 +14,6 @@ import json
 import io
 import base64
 from typing import Optional, Dict, Any, List
-import plotly.express as px
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 
 # Configure Streamlit page
 st.set_page_config(
@@ -227,7 +225,7 @@ def show_enhanced_dashboard():
         avg_anxiety = np.mean([e['anxiety_level'] for e in entries if e['anxiety_level'] is not None])
         st.metric("Avg Anxiety", f"{avg_anxiety:.1f}/10", "😰")
     
-    # Charts
+    # Charts using built-in Streamlit components
     col1, col2 = st.columns(2)
     
     with col1:
@@ -238,9 +236,8 @@ def show_enhanced_dashboard():
             'sleep_quality': e['sleep_quality']
         } for e in entries])
         
-        fig = px.line(sleep_data, x='date', y='sleep_hours', 
-                     title='Sleep Hours Over Time')
-        st.plotly_chart(fig, use_container_width=True)
+        # Use built-in line chart
+        st.line_chart(sleep_data.set_index('date')['sleep_hours'])
     
     with col2:
         st.subheader("😊 Mood & Anxiety")
@@ -250,9 +247,8 @@ def show_enhanced_dashboard():
             'anxiety': e['anxiety_level']
         } for e in entries])
         
-        fig = px.line(mood_data, x='date', y=['mood', 'anxiety'], 
-                     title='Mood and Anxiety Trends')
-        st.plotly_chart(fig, use_container_width=True)
+        # Use built-in line chart
+        st.line_chart(mood_data.set_index('date')[['mood', 'anxiety']])
     
     # Recent entries table
     st.subheader("📋 Recent Entries")
@@ -475,7 +471,7 @@ def show_calendar_view():
     with col2:
         end_date = st.date_input("End Date", value=date.today())
     
-    # Create calendar heatmap
+    # Create calendar heatmap using built-in components
     st.subheader("🌡️ Sleep Quality Heatmap")
     
     # Prepare data for heatmap
@@ -493,22 +489,12 @@ def show_calendar_view():
     if calendar_data:
         df = pd.DataFrame(calendar_data)
         
-        # Sleep quality heatmap
-        fig = px.imshow(
-            df.pivot_table(index=df['date'].dt.day, columns=df['date'].dt.month, values='sleep_quality', aggfunc='mean'),
-            title='Sleep Quality Heatmap',
-            color_continuous_scale='RdYlBu_r'
-        )
-        st.plotly_chart(fig, use_container_width=True)
+        # Use built-in bar chart for sleep quality
+        st.bar_chart(df.set_index('date')['sleep_quality'])
         
-        # Mood heatmap
-        st.subheader("😊 Mood Heatmap")
-        fig2 = px.imshow(
-            df.pivot_table(index=df['date'].dt.day, columns=df['date'].dt.month, values='mood', aggfunc='mean'),
-            title='Mood Heatmap',
-            color_continuous_scale='RdYlGn'
-        )
-        st.plotly_chart(fig2, use_container_width=True)
+        # Mood chart
+        st.subheader("😊 Mood Trends")
+        st.line_chart(df.set_index('date')['mood'])
 
 def show_routines():
     """Display enhanced routine management."""
@@ -708,31 +694,15 @@ def show_weather_correlation():
     if correlation_data:
         corr_df = pd.DataFrame(correlation_data)
         
-        # Correlation matrix
-        numeric_cols = ['temperature', 'humidity', 'precipitation', 'anxiety', 'mood']
-        correlation_matrix = corr_df[numeric_cols].corr()
-        
-        fig = px.imshow(
-            correlation_matrix,
-            title='Weather-Symptom Correlation Matrix',
-            color_continuous_scale='RdBu',
-            aspect='auto'
-        )
-        st.plotly_chart(fig, use_container_width=True)
+        # Use built-in charts
+        st.subheader("🌡️ Temperature vs Anxiety")
+        st.scatter_chart(corr_df, x='temperature', y='anxiety')
         
         # Migraine vs weather
         st.subheader("🤕 Migraine vs Weather")
         migraine_data = corr_df[corr_df['migraine'] == True]
         if not migraine_data.empty:
-            fig2 = px.scatter(
-                migraine_data, 
-                x='temperature', 
-                y='humidity',
-                title='Migraine Occurrences vs Temperature & Humidity',
-                color='anxiety',
-                size='precipitation'
-            )
-            st.plotly_chart(fig2, use_container_width=True)
+            st.scatter_chart(migraine_data, x='temperature', y='humidity')
 
 def show_advanced_analytics():
     """Display advanced analytics and insights."""
@@ -755,25 +725,14 @@ def show_advanced_analytics():
     col1, col2 = st.columns(2)
     
     with col1:
-        # Sleep vs mood correlation
-        fig = px.scatter(
-            sleep_data, 
-            x='sleep_hours', 
-            y='mood',
-            title='Sleep Hours vs Mood',
-            trendline='ols'
-        )
-        st.plotly_chart(fig, use_container_width=True)
+        # Sleep vs mood correlation using built-in chart
+        st.subheader("Sleep Hours vs Mood")
+        st.scatter_chart(sleep_data, x='sleep_hours', y='mood')
     
     with col2:
-        # Sleep quality distribution
-        fig2 = px.histogram(
-            sleep_data, 
-            x='sleep_quality',
-            title='Sleep Quality Distribution',
-            nbins=5
-        )
-        st.plotly_chart(fig2, use_container_width=True)
+        # Sleep quality distribution using built-in chart
+        st.subheader("Sleep Quality Distribution")
+        st.bar_chart(sleep_data['sleep_quality'].value_counts())
     
     # Trigger analysis
     st.subheader("⚠️ Trigger Analysis")
