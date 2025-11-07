@@ -1,0 +1,27 @@
+{
+  "name": "MindTrack - Mental Health Companion",
+  "short_name": "MindTrack",
+  "description": "Your comprehensive mental health and wellness tracking companion",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#D8B4FE",
+  "theme_color": "#D8B4FE",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["health", "medical", "lifestyle"],
+  "lang": "en",
+  "dir": "ltr"
+}
