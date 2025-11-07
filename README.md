@@ -1,4 +1,4 @@
-# MindTrack - Mental Health Tracking Application
+# MindMap - Mental Health Tracking Application
 
 A comprehensive mental health tracking Progressive Web App (PWA) built with Next.js and TypeScript, merged from the original MindMap Python/Streamlit application.
 
@@ -7,7 +7,7 @@ A comprehensive mental health tracking Progressive Web App (PWA) built with Next
 
 ## Overview
 
-MindTrack is a modern, feature-rich mental health tracking application designed to help individuals manage anxiety, ADHD, bipolar disorder, depression, and chronic migraines. The application combines the best features from both the original MindMap Python/Streamlit version and the Next.js PWA version.
+MindMap is a modern, feature-rich mental health tracking application designed to help individuals manage anxiety, ADHD, bipolar disorder, depression, and chronic migraines. The application combines the best features from both the original MindMap Python/Streamlit version and the Next.js PWA version.
 
 ## Features
 
@@ -45,7 +45,7 @@ MindTrack is a modern, feature-rich mental health tracking application designed 
 
 ### Backend (Alternative/Reference)
 - **Python FastAPI**: RESTful API backend (see `Mindmap.py`)
-- **Streamlit**: Alternative web interface (see `streamlit_mindtrack_complete.py`)
+- **Streamlit**: Alternative web interface (see `streamlit_MindMap_complete.py`)
 - **SQLAlchemy**: Database ORM
 - **Pandas**: Data analysis
 
@@ -106,7 +106,7 @@ uvicorn Mindmap:app --reload
 pip install -r requirements_python.txt
 
 # Run Streamlit app
-streamlit run streamlit_mindtrack_complete.py
+streamlit run streamlit_MindMap_complete.py
 ```
 
 ## Project Structure
@@ -127,7 +127,7 @@ MindMap/
 │   ├── manifest.json    # PWA manifest
 │   └── sw.js            # Service worker
 ├── Mindmap.py           # FastAPI backend (reference)
-├── streamlit_mindtrack_complete.py  # Streamlit interface (reference)
+├── streamlit_MindMap_complete.py  # Streamlit interface (reference)
 ├── requirements_python.txt          # Python dependencies
 └── streamlit_config.toml            # Streamlit configuration
 ```
