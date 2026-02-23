@@ -1,0 +1,45 @@
+---
+description: Supabase project and env for Mind Map
+alwaysApply: true
+---
+
+# Supabase (Mind Map)
+
+- **Project ID:** `zunpccwjghwpiljwwjpv`
+- **API URL:** `https://zunpccwjghwpiljwwjpv.supabase.co`
+
+## Environment variables (`.env.local`, gitignored)
+
+| Variable | Purpose | Client-safe? |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | API base URL | Yes |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public/anon key (`sb_publishable_…`) | Yes |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role key (`sb_secret_…`) | **No** – server-only |
+| `SUPABASE_PROJECT_ID` | Project reference | N/A |
+| `DATABASE_URL` | Direct Postgres connection string | **No** – server-only |
+
+Never put `SUPABASE_SERVICE_ROLE_KEY` or `DATABASE_URL` in a `NEXT_PUBLIC_` variable.
+
+## Database schema
+
+Full DDL is in `supabase/schema.sql`. Key tables:
+
+| Table | Purpose | Keyed by |
+|---|---|---|
+| `profiles` | User profile (display name, timezone) | `auth.users.id` |
+| `mindmap_entries` | Daily check-in (sleep, mood, anxiety, depression, mania, focus, migraine, etc.) | `user_id` |
+| `mindmap_body_sensations` | Body-map sensations per entry | `entry_id` |
+| `mindmap_meds` | Meds taken per entry | `entry_id` |
+| `mindmap_medication_schedule` | Recurring med prescriptions | `user_id` |
+| `mindmap_medication_adherence` | Did user take scheduled med? | `medication_schedule_id` |
+| `mindmap_routines` | User-defined routines | `user_id` |
+| `mindmap_entry_routines` | Routines completed per entry | `entry_id, routine_id` |
+| `mindmap_journal_entries` | Free-form journal | `user_id` |
+| `mindmap_therapy_sessions` | Therapy session logs | `user_id` |
+| `mindmap_goals` | Trackable goals | `user_id` |
+| `mindmap_triggers` | Alert rules (e.g. anxiety > 7) | `user_id` |
+| `mindmap_trigger_events` | Fired trigger instances | `trigger_id` |
+| `mindmap_reminders` | Scheduled reminders | `user_id` |
+| `mindmap_data_exports` | Export history | `user_id` |
+
+All user-owned tables FK to `auth.users(id)`. Entry-child tables FK to `mindmap_entries(id)`.
