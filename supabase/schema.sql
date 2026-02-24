@@ -330,3 +330,85 @@ CREATE TABLE public.sharing_audit_log (
   CONSTRAINT sharing_audit_log_actor_fkey FOREIGN KEY (actor_user_id) REFERENCES auth.users(id),
   CONSTRAINT sharing_audit_log_patient_fkey FOREIGN KEY (patient_user_id) REFERENCES auth.users(id)
 );
+
+-- ============================================================================
+-- JOURNAL ENCRYPTION PREP (columns on mindmap_journal_entries)
+-- ============================================================================
+-- mindmap_journal_entries also has:
+--   body_encrypted bytea           — ciphertext (Phase 3)
+--   encryption_key_id text         — external key reference
+--   encryption_algo text           — 'none' | 'aes-256-gcm' | 'xchacha20-poly1305'
+--   encrypted_at timestamptz       — when encryption was applied
+
+-- ============================================================================
+-- EXPLAINABLE INSIGHTS
+-- ============================================================================
+
+CREATE TABLE public.mindmap_insights (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  entry_id uuid,
+  insight_type text NOT NULL
+    CHECK (insight_type = ANY (ARRAY[
+      'migraine_risk', 'mood_trend', 'sleep_alert',
+      'anxiety_alert', 'medication_gap', 'routine_streak',
+      'depression_trend', 'mania_alert', 'custom'
+    ])),
+  risk_level text NOT NULL
+    CHECK (risk_level = ANY (ARRAY['low', 'moderate', 'high', 'critical'])),
+  score integer CHECK (score >= 0 AND score <= 100),
+  reasons text[] NOT NULL DEFAULT '{}',
+  signals jsonb NOT NULL DEFAULT '{}',
+  summary text NOT NULL,
+  is_acknowledged boolean NOT NULL DEFAULT false,
+  acknowledged_at timestamp with time zone,
+  computed_at timestamp with time zone NOT NULL DEFAULT now(),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT mindmap_insights_pkey PRIMARY KEY (id),
+  CONSTRAINT mindmap_insights_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id),
+  CONSTRAINT mindmap_insights_entry_id_fkey FOREIGN KEY (entry_id) REFERENCES public.mindmap_entries(id)
+);
+
+-- ============================================================================
+-- COMPLIANCE UX
+-- ============================================================================
+
+-- Append-only consent records
+CREATE TABLE public.consent_records (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  consent_type text NOT NULL
+    CHECK (consent_type = ANY (ARRAY[
+      'terms_of_service', 'privacy_policy', 'data_sharing',
+      'analytics_collection', 'email_notifications', 'push_notifications'
+    ])),
+  consent_version text NOT NULL,
+  granted boolean NOT NULL,
+  ip_address text,
+  user_agent text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT consent_records_pkey PRIMARY KEY (id),
+  CONSTRAINT consent_records_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
+
+-- User-initiated data deletion requests
+CREATE TABLE public.data_deletion_requests (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  status text NOT NULL DEFAULT 'pending'
+    CHECK (status = ANY (ARRAY['pending', 'processing', 'completed', 'cancelled'])),
+  scope text NOT NULL DEFAULT 'all'
+    CHECK (scope = ANY (ARRAY[
+      'all', 'entries', 'journal', 'medications',
+      'routines', 'therapy_sessions', 'goals', 'exports'
+    ])),
+  reason text,
+  requested_at timestamp with time zone NOT NULL DEFAULT now(),
+  processed_at timestamp with time zone,
+  completed_at timestamp with time zone,
+  processed_by text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT data_deletion_requests_pkey PRIMARY KEY (id),
+  CONSTRAINT data_deletion_requests_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
