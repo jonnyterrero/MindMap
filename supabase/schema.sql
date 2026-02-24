@@ -307,3 +307,26 @@ CREATE TABLE public.data_shares (
   CONSTRAINT data_shares_patient_user_id_fkey FOREIGN KEY (patient_user_id) REFERENCES auth.users(id),
   CONSTRAINT data_shares_provider_client_id_fkey FOREIGN KEY (provider_client_id) REFERENCES public.provider_clients(id) ON DELETE CASCADE
 );
+
+-- Append-only audit log for all sharing activity.
+-- No updates, no deletes — records are immutable for compliance.
+CREATE TABLE public.sharing_audit_log (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  actor_user_id uuid NOT NULL,
+  patient_user_id uuid NOT NULL,
+  action text NOT NULL
+    CHECK (action = ANY (ARRAY[
+      'share_granted', 'share_revoked', 'share_paused', 'share_resumed',
+      'data_viewed', 'data_exported',
+      'client_invited', 'client_accepted', 'client_revoked'
+    ])),
+  resource_type text,
+  provider_client_id uuid,
+  data_share_id uuid,
+  metadata jsonb DEFAULT '{}',
+  ip_address text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT sharing_audit_log_pkey PRIMARY KEY (id),
+  CONSTRAINT sharing_audit_log_actor_fkey FOREIGN KEY (actor_user_id) REFERENCES auth.users(id),
+  CONSTRAINT sharing_audit_log_patient_fkey FOREIGN KEY (patient_user_id) REFERENCES auth.users(id)
+);

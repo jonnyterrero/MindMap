@@ -159,4 +159,72 @@ CREATE POLICY "Org owners manage org"
     )
   );
 
+-- =========================================================================
+-- AUDIT LOG — append-only, immutable
+-- =========================================================================
+
+CREATE TABLE IF NOT EXISTS public.sharing_audit_log (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  actor_user_id uuid NOT NULL REFERENCES auth.users(id),
+  patient_user_id uuid NOT NULL REFERENCES auth.users(id),
+  action text NOT NULL
+    CHECK (action = ANY (ARRAY[
+      'share_granted', 'share_revoked', 'share_paused', 'share_resumed',
+      'data_viewed', 'data_exported',
+      'client_invited', 'client_accepted', 'client_revoked'
+    ])),
+  resource_type text,
+  provider_client_id uuid,
+  data_share_id uuid,
+  metadata jsonb DEFAULT '{}',
+  ip_address text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (id)
+);
+
+ALTER TABLE public.sharing_audit_log ENABLE ROW LEVEL SECURITY;
+
+-- Patients can read their own audit trail
+CREATE POLICY "Patients read own audit log"
+  ON public.sharing_audit_log
+  FOR SELECT
+  USING (auth.uid() = patient_user_id);
+
+-- Insert-only for authenticated users (no update, no delete)
+CREATE POLICY "Authenticated users insert audit log"
+  ON public.sharing_audit_log
+  FOR INSERT
+  WITH CHECK (auth.uid() = actor_user_id);
+
+-- Providers can read audit entries for patients who share with them
+CREATE POLICY "Providers read audit log for shared patients"
+  ON public.sharing_audit_log
+  FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.provider_clients pc
+      JOIN public.provider_profiles pp ON pp.org_id = pc.org_id
+      WHERE pc.patient_user_id = sharing_audit_log.patient_user_id
+        AND pp.user_id = auth.uid()
+        AND pp.is_active = true
+        AND pc.status = 'active'
+    )
+  );
+
+-- Block updates and deletes at the database level (belt + suspenders)
+CREATE OR REPLACE FUNCTION prevent_audit_mutation()
+  RETURNS trigger AS $$
+BEGIN
+  RAISE EXCEPTION 'Audit log records are immutable';
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER no_audit_update
+  BEFORE UPDATE ON public.sharing_audit_log
+  FOR EACH ROW EXECUTE FUNCTION prevent_audit_mutation();
+
+CREATE TRIGGER no_audit_delete
+  BEFORE DELETE ON public.sharing_audit_log
+  FOR EACH ROW EXECUTE FUNCTION prevent_audit_mutation();
+
 COMMIT;
