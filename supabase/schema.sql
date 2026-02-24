@@ -1,6 +1,6 @@
 -- MindMap Supabase Schema (reference only — not meant to be run directly)
 -- Project: zunpccwjghwpiljwwjpv
--- Last updated: 2026-02-21
+-- Last updated: 2026-02-24
 
 CREATE TABLE public.profiles (
   id uuid NOT NULL,
@@ -225,4 +225,85 @@ CREATE TABLE public.mindmap_data_exports (
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT mindmap_data_exports_pkey PRIMARY KEY (id),
   CONSTRAINT mindmap_data_exports_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
+
+-- ============================================================================
+-- SHARING MODEL
+-- Patient-controlled sharing: all data_shares rows are created by/for the
+-- patient. Providers can only see what a patient explicitly grants.
+-- ============================================================================
+
+-- A provider's workspace (clinic, practice, solo therapist, etc.)
+CREATE TABLE public.provider_orgs (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  slug text UNIQUE,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT provider_orgs_pkey PRIMARY KEY (id)
+);
+
+-- Ties an auth user to a provider role inside an org.
+-- One user can belong to multiple orgs; one org can have many staff.
+CREATE TABLE public.provider_profiles (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  org_id uuid NOT NULL,
+  role text NOT NULL DEFAULT 'provider'
+    CHECK (role = ANY (ARRAY['owner', 'admin', 'provider', 'staff'])),
+  display_name text,
+  credentials text,
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT provider_profiles_pkey PRIMARY KEY (id),
+  CONSTRAINT provider_profiles_user_org_uq UNIQUE (user_id, org_id),
+  CONSTRAINT provider_profiles_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id),
+  CONSTRAINT provider_profiles_org_id_fkey FOREIGN KEY (org_id) REFERENCES public.provider_orgs(id) ON DELETE CASCADE
+);
+
+-- Relationship between a provider org and a patient user.
+-- Created when a patient accepts an invite or a provider sends one.
+CREATE TABLE public.provider_clients (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  org_id uuid NOT NULL,
+  patient_user_id uuid NOT NULL,
+  status text NOT NULL DEFAULT 'pending'
+    CHECK (status = ANY (ARRAY['pending', 'active', 'paused', 'revoked'])),
+  invited_by uuid,
+  invite_code text UNIQUE,
+  notes text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT provider_clients_pkey PRIMARY KEY (id),
+  CONSTRAINT provider_clients_org_patient_uq UNIQUE (org_id, patient_user_id),
+  CONSTRAINT provider_clients_org_id_fkey FOREIGN KEY (org_id) REFERENCES public.provider_orgs(id) ON DELETE CASCADE,
+  CONSTRAINT provider_clients_patient_user_id_fkey FOREIGN KEY (patient_user_id) REFERENCES auth.users(id),
+  CONSTRAINT provider_clients_invited_by_fkey FOREIGN KEY (invited_by) REFERENCES auth.users(id)
+);
+
+-- What data a patient shares and with what scope.
+-- PATIENT CONTROLS THIS — rows are created/revoked by the patient.
+-- Granular: one row per resource type per provider relationship.
+CREATE TABLE public.data_shares (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  patient_user_id uuid NOT NULL,
+  provider_client_id uuid NOT NULL,
+  resource_type text NOT NULL
+    CHECK (resource_type = ANY (ARRAY[
+      'entries', 'journal', 'medications', 'routines',
+      'therapy_sessions', 'goals', 'triggers', 'body_sensations', 'all'
+    ])),
+  scope text NOT NULL DEFAULT 'read'
+    CHECK (scope = ANY (ARRAY['read', 'read_write'])),
+  date_range_start date,
+  date_range_end date,
+  is_active boolean NOT NULL DEFAULT true,
+  granted_at timestamp with time zone NOT NULL DEFAULT now(),
+  revoked_at timestamp with time zone,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT data_shares_pkey PRIMARY KEY (id),
+  CONSTRAINT data_shares_patient_user_id_fkey FOREIGN KEY (patient_user_id) REFERENCES auth.users(id),
+  CONSTRAINT data_shares_provider_client_id_fkey FOREIGN KEY (provider_client_id) REFERENCES public.provider_clients(id) ON DELETE CASCADE
 );
