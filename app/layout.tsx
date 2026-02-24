@@ -1,5 +1,5 @@
 import type React from "react"
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Space_Grotesk, DM_Sans } from "next/font/google"
 import "./globals.css"
 import { UpdatePrompt } from "@/components/update-prompt"
@@ -16,13 +16,17 @@ const dmSans = DM_Sans({
   variable: "--font-dm-sans",
 })
 
-export const metadata: Metadata = {
-  title: "MindTrack - Mental Health Companion",
-  description: "Your comprehensive mental health and wellness tracking companion with advanced analytics",
-  generator: "v0.app",
-  manifest: "/manifest.json",
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
   themeColor: "#D8B4FE",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
+}
+
+export const metadata: Metadata = {
+  title: "MindMap - Mental Health Companion",
+  description: "Your comprehensive mental health and wellness tracking companion with advanced analytics",
+  manifest: "/manifest.json",
 }
 
 export default function RootLayout({
