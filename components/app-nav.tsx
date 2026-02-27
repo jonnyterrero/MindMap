@@ -2,16 +2,34 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Brain, CalendarCheck, ListChecks, BarChart3, LogOut } from "lucide-react";
+import {
+  Brain, CalendarCheck, ListChecks, Pill, BookOpen,
+  BarChart3, Target, Heart, Lightbulb, MoreHorizontal,
+  Settings, LogOut,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { signout } from "@/app/auth/actions";
 import { cn } from "@/lib/utils";
 import type { User } from "@supabase/supabase-js";
 
-const navItems = [
+const primaryNav = [
   { href: "/today", label: "Today", icon: CalendarCheck },
   { href: "/routines", label: "Routines", icon: ListChecks },
+  { href: "/medications", label: "Meds", icon: Pill },
+  { href: "/journal", label: "Journal", icon: BookOpen },
   { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
+];
+
+const moreNav = [
+  { href: "/goals", label: "Goals", icon: Target },
+  { href: "/therapy", label: "Therapy", icon: Heart },
+  { href: "/insights", label: "Insights", icon: Lightbulb },
 ];
 
 export function AppNav({ user }: { user: User }) {
@@ -19,6 +37,8 @@ export function AppNav({ user }: { user: User }) {
 
   const displayName =
     user.user_metadata?.display_name || user.email?.split("@")[0] || "User";
+
+  const isMoreActive = moreNav.some((item) => pathname.startsWith(item.href));
 
   return (
     <header className="sticky top-0 z-50 glass-strong">
@@ -29,7 +49,7 @@ export function AppNav({ user }: { user: User }) {
         </Link>
 
         <nav className="flex items-center gap-1">
-          {navItems.map(({ href, label, icon: Icon }) => (
+          {primaryNav.map(({ href, label, icon: Icon }) => (
             <Link key={href} href={href}>
               <Button
                 variant={pathname.startsWith(href) ? "default" : "ghost"}
@@ -44,12 +64,46 @@ export function AppNav({ user }: { user: User }) {
               </Button>
             </Link>
           ))}
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant={isMoreActive ? "default" : "ghost"}
+                size="sm"
+                className="gap-1.5"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+                <span className="hidden sm:inline">More</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {moreNav.map(({ href, label, icon: Icon }) => (
+                <DropdownMenuItem key={href} asChild>
+                  <Link
+                    href={href}
+                    className={cn(
+                      "flex items-center gap-2",
+                      pathname.startsWith(href) && "font-medium"
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {label}
+                  </Link>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </nav>
 
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground hidden sm:inline">
+        <div className="flex items-center gap-1">
+          <span className="text-sm text-muted-foreground hidden sm:inline mr-1">
             {displayName}
           </span>
+          <Link href="/settings">
+            <Button variant="ghost" size="icon">
+              <Settings className="h-4 w-4" />
+            </Button>
+          </Link>
           <form action={signout}>
             <Button type="submit" variant="ghost" size="icon">
               <LogOut className="h-4 w-4" />

@@ -60,6 +60,68 @@ export async function upsertTodayEntry(payload: EntryPayload) {
   return { success: true };
 }
 
+export async function getBodySensations(entryId: string) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("mindmap_body_sensations")
+    .select("*")
+    .eq("entry_id", entryId)
+    .order("created_at", { ascending: true });
+
+  return data ?? [];
+}
+
+export async function addBodySensation(
+  bodyPart: string,
+  sensation: string,
+  intensity: number
+) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const today = new Date().toISOString().split("T")[0];
+  let { data: entry } = await supabase
+    .from("mindmap_entries")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("entry_date", today)
+    .maybeSingle();
+
+  if (!entry) {
+    const { data: newEntry, error: insertError } = await supabase
+      .from("mindmap_entries")
+      .insert({ user_id: user.id, entry_date: today })
+      .select("id")
+      .single();
+    if (insertError) return { error: insertError.message };
+    entry = newEntry;
+  }
+
+  const { error } = await supabase.from("mindmap_body_sensations").insert({
+    entry_id: entry!.id,
+    body_part: bodyPart,
+    sensation,
+    intensity,
+  });
+
+  if (error) return { error: error.message };
+  revalidatePath("/today");
+  return { success: true };
+}
+
+export async function removeBodySensation(id: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("mindmap_body_sensations")
+    .delete()
+    .eq("id", id);
+
+  if (error) return { error: error.message };
+  revalidatePath("/today");
+  return { success: true };
+}
+
 export async function getTodayEntry() {
   const supabase = await createClient();
   const {
