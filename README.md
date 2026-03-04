@@ -64,8 +64,8 @@ Then open your browser at `http://localhost:3000`.
 ### Production Build
 
 ```bash
-pnpm build
-pnpm start
+pnpm install
+pnpm dev
 ```
 
 ## Available Scripts
@@ -97,6 +97,7 @@ MindMap/
 ├── lib/                    # Utility helpers
 ├── public/                 # Static assets, icons, and service worker
 ├── styles/                 # Global CSS
+├── supabase/               # Supabase migration scripts
 ├── Mindmap.py              # Legacy FastAPI backend (reference)
 ├── streamlit_*.py          # Streamlit prototypes and utilities
 └── tsconfig.json           # TypeScript configuration
@@ -105,6 +106,8 @@ MindMap/
 ## API Overview
 
 The Next.js app exposes REST endpoints under `/api/v1` for mood, sleep, medications, analytics, and authentication. See `API_DOCUMENTATION.md` for full request/response details. A legacy FastAPI backend (`Mindmap.py`) is included for reference or hybrid deployments.
+
+Analytics are captured automatically via `@vercel/analytics` from `app/layout.tsx`.
 
 ## Deployment
 

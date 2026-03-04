@@ -2,6 +2,7 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Space_Grotesk, DM_Sans } from "next/font/google"
 import "./globals.css"
+import { Analytics } from "@vercel/analytics/react"
 import { UpdatePrompt } from "@/components/update-prompt"
 
 const spaceGrotesk = Space_Grotesk({
@@ -34,6 +35,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`font-sans ${spaceGrotesk.variable} ${dmSans.variable} antialiased`}>
         {children}
+        <Analytics />
         <UpdatePrompt />
       </body>
     </html>
