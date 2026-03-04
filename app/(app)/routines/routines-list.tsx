@@ -25,35 +25,53 @@ type Routine = {
   created_at: string;
 };
 
-export function RoutinesList({ routines }: { routines: Routine[] }) {
+export function RoutinesList({ routines: initialRoutines }: { routines: Routine[] }) {
   const [newName, setNewName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [isPending, startTransition] = useTransition();
+  const [routines, setRoutines] = useState(initialRoutines);
 
   function handleCreate() {
     if (!newName.trim()) return;
+    const tempRoutine: Routine = {
+      id: `temp-${Date.now()}`,
+      name: newName.trim(),
+      is_active: true,
+      created_at: new Date().toISOString(),
+    };
+    setRoutines((prev) => [...prev, tempRoutine]);
+    const nameToCreate = newName;
+    setNewName("");
+
     startTransition(async () => {
-      await createRoutine(newName);
-      setNewName("");
+      await createRoutine(nameToCreate);
     });
   }
 
   function handleUpdate(id: string) {
     if (!editName.trim()) return;
+    setRoutines((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, name: editName.trim() } : r))
+    );
+    setEditingId(null);
+
     startTransition(async () => {
       await updateRoutine(id, editName);
-      setEditingId(null);
     });
   }
 
   function handleToggle(id: string, current: boolean) {
+    setRoutines((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, is_active: !current } : r))
+    );
     startTransition(async () => {
       await toggleRoutineActive(id, !current);
     });
   }
 
   function handleDelete(id: string) {
+    setRoutines((prev) => prev.filter((r) => r.id !== id));
     startTransition(async () => {
       await deleteRoutine(id);
     });

@@ -67,7 +67,6 @@ export default function LoginPage() {
       }
 
       router.push("/today");
-      router.refresh();
     }
   }
 

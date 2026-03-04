@@ -24,8 +24,9 @@ const MOOD_LABELS: Record<number, string> = {
   0: "Neutral", 1: "Slightly High", 2: "High", 3: "Very High",
 };
 
-export function TherapyList({ sessions }: { sessions: Session[] }) {
+export function TherapyList({ sessions: initialSessions }: { sessions: Session[] }) {
   const [isPending, startTransition] = useTransition();
+  const [sessions, setSessions] = useState(initialSessions);
   const [showNew, setShowNew] = useState(false);
   const [sessionDate, setSessionDate] = useState(new Date().toISOString().split("T")[0]);
   const [sessionTime, setSessionTime] = useState("");
@@ -60,14 +61,25 @@ export function TherapyList({ sessions }: { sessions: Session[] }) {
       homework_assigned: homework.trim() || null,
       next_session_date: nextDate || null,
     };
+
+    const optimistic: Session = {
+      id: `temp-${Date.now()}`,
+      ...payload,
+      created_at: new Date().toISOString(),
+    };
+    setSessions((prev) => [optimistic, ...prev]);
+    resetForm();
+
     startTransition(async () => {
       await createTherapySession(payload);
-      resetForm();
     });
   }
 
   function handleDelete(id: string) {
-    startTransition(async () => { await deleteTherapySession(id); });
+    setSessions((prev) => prev.filter((s) => s.id !== id));
+    startTransition(async () => {
+      await deleteTherapySession(id);
+    });
   }
 
   return (

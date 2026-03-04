@@ -12,7 +12,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Card, CardContent, CardDescription, CardHeader, CardTitle,
+  Card, CardContent, CardHeader, CardTitle,
 } from "@/components/ui/card";
 import { Plus, Trash2, Loader2, Target } from "lucide-react";
 
@@ -20,8 +20,9 @@ type Goal = Record<string, unknown>;
 
 const CATEGORIES = ["Sleep", "Mood", "Exercise", "Productivity", "Medication", "Therapy", "Other"];
 
-export function GoalsList({ goals }: { goals: Goal[] }) {
+export function GoalsList({ goals: initialGoals }: { goals: Goal[] }) {
   const [isPending, startTransition] = useTransition();
+  const [goals, setGoals] = useState(initialGoals);
   const [showNew, setShowNew] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -46,19 +47,34 @@ export function GoalsList({ goals }: { goals: Goal[] }) {
       unit: unit.trim() || null,
       target_date: targetDate || null,
     };
+
+    const optimistic: Goal = {
+      id: `temp-${Date.now()}`,
+      ...payload,
+      current_value: 0,
+      is_completed: false,
+      is_active: true,
+      created_at: new Date().toISOString(),
+    };
+    setGoals((prev) => [...prev, optimistic]);
+    resetForm();
+
     startTransition(async () => {
       await createGoal(payload);
-      resetForm();
     });
   }
 
   function handleToggle(id: string, current: boolean) {
+    setGoals((prev) =>
+      prev.map((g) => (g.id === id ? { ...g, is_completed: !current } : g))
+    );
     startTransition(async () => {
       await toggleGoalComplete(id, !current);
     });
   }
 
   function handleDelete(id: string) {
+    setGoals((prev) => prev.filter((g) => g.id !== id));
     startTransition(async () => {
       await deleteGoal(id);
     });

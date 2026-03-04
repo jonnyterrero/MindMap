@@ -24,8 +24,9 @@ const MOOD_TAG_OPTIONS = [
   "grateful", "hopeful", "tired", "energetic", "overwhelmed",
 ];
 
-export function JournalList({ entries }: { entries: Entry[] }) {
+export function JournalList({ entries: initialEntries }: { entries: Entry[] }) {
   const [isPending, startTransition] = useTransition();
+  const [entries, setEntries] = useState(initialEntries);
   const [showNew, setShowNew] = useState(false);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -55,13 +56,22 @@ export function JournalList({ entries }: { entries: Entry[] }) {
       mood_tags: moodTags,
       is_private: isPrivate,
     };
+
+    const optimistic: Entry = {
+      id: `temp-${Date.now()}`,
+      ...payload,
+      created_at: new Date().toISOString(),
+    };
+    setEntries((prev) => [optimistic, ...prev]);
+    resetForm();
+
     startTransition(async () => {
       await createJournalEntry(payload);
-      resetForm();
     });
   }
 
   function handleDelete(id: string) {
+    setEntries((prev) => prev.filter((e) => e.id !== id));
     startTransition(async () => {
       await deleteJournalEntry(id);
     });

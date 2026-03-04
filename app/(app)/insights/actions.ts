@@ -43,7 +43,15 @@ export async function generateInsights() {
 
   revalidatePath("/insights");
   revalidatePath("/dashboard");
-  return { success: true, insights };
+
+  const { data: saved } = await supabase
+    .from("mindmap_insights")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("computed_at", { ascending: false })
+    .limit(10);
+
+  return saved ?? [];
 }
 
 export async function getLatestInsights() {

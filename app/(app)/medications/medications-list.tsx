@@ -23,7 +23,6 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
 import { Plus, Trash2, Loader2, Pill, Clock } from "lucide-react";
 
@@ -31,8 +30,9 @@ type Schedule = Record<string, unknown>;
 
 const FREQUENCIES = ["Daily", "Weekly", "Monthly", "As Needed", "Custom"];
 
-export function MedicationsList({ schedules }: { schedules: Schedule[] }) {
+export function MedicationsList({ schedules: initialSchedules }: { schedules: Schedule[] }) {
   const [isPending, startTransition] = useTransition();
+  const [schedules, setSchedules] = useState(initialSchedules);
   const [showAdd, setShowAdd] = useState(false);
   const [name, setName] = useState("");
   const [dosage, setDosage] = useState("");
@@ -63,19 +63,32 @@ export function MedicationsList({ schedules }: { schedules: Schedule[] }) {
       end_date: null,
       notes: notes.trim() || null,
     };
+
+    const optimistic: Schedule = {
+      id: `temp-${Date.now()}`,
+      ...payload,
+      is_active: true,
+      created_at: new Date().toISOString(),
+    };
+    setSchedules((prev) => [...prev, optimistic]);
+    resetForm();
+
     startTransition(async () => {
       await createMedSchedule(payload);
-      resetForm();
     });
   }
 
   function handleToggle(id: string, current: boolean) {
+    setSchedules((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, is_active: !current } : m))
+    );
     startTransition(async () => {
       await toggleMedActive(id, !current);
     });
   }
 
   function handleDelete(id: string) {
+    setSchedules((prev) => prev.filter((m) => m.id !== id));
     startTransition(async () => {
       await deleteMedSchedule(id);
     });

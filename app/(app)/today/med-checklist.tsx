@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { logMedAdherence } from "@/app/(app)/medications/actions";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -22,12 +22,18 @@ type MedWithStatus = {
   was_skipped: boolean;
 };
 
-export function MedChecklist({ meds }: { meds: MedWithStatus[] }) {
+export function MedChecklist({ meds: initialMeds }: { meds: MedWithStatus[] }) {
   const [isPending, startTransition] = useTransition();
+  const [meds, setMeds] = useState(initialMeds);
 
   const takenCount = meds.filter((m) => m.was_taken).length;
 
   function handleToggle(scheduleId: string, currentlyTaken: boolean) {
+    setMeds((prev) =>
+      prev.map((m) =>
+        m.id === scheduleId ? { ...m, was_taken: !currentlyTaken } : m
+      )
+    );
     startTransition(async () => {
       await logMedAdherence(scheduleId, !currentlyTaken, false);
     });

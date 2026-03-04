@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { generateInsights } from "./actions";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,12 +20,16 @@ const RISK_CONFIG: Record<string, { color: string; icon: typeof CheckCircle2 }> 
   unknown: { color: "text-muted-foreground", icon: Info },
 };
 
-export function InsightsView({ insights }: { insights: Insight[] }) {
+export function InsightsView({ insights: initialInsights }: { insights: Insight[] }) {
   const [isPending, startTransition] = useTransition();
+  const [insights, setInsights] = useState(initialInsights);
 
   function handleRefresh() {
     startTransition(async () => {
-      await generateInsights();
+      const result = await generateInsights();
+      if (result && Array.isArray(result)) {
+        setInsights(result);
+      }
     });
   }
 

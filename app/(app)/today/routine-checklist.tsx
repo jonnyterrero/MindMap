@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { toggleRoutineCompletion } from "./actions";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -20,15 +20,19 @@ type RoutineWithStatus = {
 };
 
 export function RoutineChecklist({
-  routines,
+  routines: initialRoutines,
 }: {
   routines: RoutineWithStatus[];
 }) {
   const [isPending, startTransition] = useTransition();
+  const [routines, setRoutines] = useState(initialRoutines);
 
   const completedCount = routines.filter((r) => r.completed).length;
 
   function handleToggle(routineId: string, checked: boolean) {
+    setRoutines((prev) =>
+      prev.map((r) => (r.id === routineId ? { ...r, completed: checked } : r))
+    );
     startTransition(async () => {
       await toggleRoutineCompletion(routineId, checked);
     });

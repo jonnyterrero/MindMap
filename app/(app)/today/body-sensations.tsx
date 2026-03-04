@@ -32,22 +32,33 @@ const SENSATIONS = [
   "Lightness", "Warmth", "Coldness", "Nausea",
 ];
 
-export function BodySensations({ sensations }: { sensations: Sensation[] }) {
+export function BodySensations({ sensations: initialSensations }: { sensations: Sensation[] }) {
   const [isPending, startTransition] = useTransition();
+  const [sensations, setSensations] = useState(initialSensations);
   const [showAdd, setShowAdd] = useState(false);
   const [bodyPart, setBodyPart] = useState("Head");
   const [sensation, setSensation] = useState("Pain");
   const [intensity, setIntensity] = useState(5);
 
   function handleAdd() {
+    const tempId = `temp-${Date.now()}`;
+    const optimistic: Sensation = {
+      id: tempId,
+      body_part: bodyPart,
+      sensation,
+      intensity,
+    };
+    setSensations((prev) => [...prev, optimistic]);
+    setShowAdd(false);
+    setIntensity(5);
+
     startTransition(async () => {
       await addBodySensation(bodyPart, sensation, intensity);
-      setShowAdd(false);
-      setIntensity(5);
     });
   }
 
   function handleRemove(id: string) {
+    setSensations((prev) => prev.filter((s) => s.id !== id));
     startTransition(async () => {
       await removeBodySensation(id);
     });
