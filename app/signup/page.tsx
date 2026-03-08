@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { signIn } from "./actions";
+import { signUp } from "@/app/login/actions";
 import { Brain } from "lucide-react";
 import {
   Card,
@@ -16,16 +16,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export default function LoginPage() {
+export default function SignUpPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(formData: FormData) {
     setError(null);
+
+    // Client-side password confirmation check before hitting the server
+    const password = formData.get("password") as string;
+    const confirmPassword = formData.get("confirmPassword") as string;
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
     setLoading(true);
-    const result = await signIn(formData);
-    // signIn redirects on success — only arrives here on error
+    const result = await signUp(formData);
+    // signUp redirects on success — only arrives here on error
     if (result?.error) {
       setError(result.error);
       setLoading(false);
@@ -39,8 +48,10 @@ export default function LoginPage() {
           <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/20">
             <Brain className="h-6 w-6 text-primary" />
           </div>
-          <CardTitle className="text-2xl">Welcome Back</CardTitle>
-          <CardDescription>Sign in to your MindMap account</CardDescription>
+          <CardTitle className="text-2xl">Create Account</CardTitle>
+          <CardDescription>
+            Start tracking your mental wellness journey
+          </CardDescription>
         </CardHeader>
 
         <form action={handleSubmit}>
@@ -69,26 +80,39 @@ export default function LoginPage() {
                 id="password"
                 name="password"
                 type="password"
-                placeholder="••••••••"
+                placeholder="At least 6 characters"
                 required
                 minLength={6}
-                autoComplete="current-password"
+                autoComplete="new-password"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                placeholder="Repeat your password"
+                required
+                minLength={6}
+                autoComplete="new-password"
               />
             </div>
           </CardContent>
 
           <CardFooter className="flex flex-col gap-3">
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Signing in…" : "Sign In"}
+              {loading ? "Creating account…" : "Create Account"}
             </Button>
 
             <button
               type="button"
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              onClick={() => router.push("/signup")}
+              onClick={() => router.push("/login")}
             >
-              Don&apos;t have an account?{" "}
-              <span className="text-primary font-medium">Sign up</span>
+              Already have an account?{" "}
+              <span className="text-primary font-medium">Sign in</span>
             </button>
           </CardFooter>
         </form>
