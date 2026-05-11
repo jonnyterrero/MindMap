@@ -25,3 +25,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*.pyd
+
+# Claude Code / local agent metrics (do not commit)
+.claude/
