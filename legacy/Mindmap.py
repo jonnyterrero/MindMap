@@ -1293,7 +1293,11 @@ def get_routine_recommendations(user_profile: Optional[UserProfile] = None, rout
 # Wearables CSV import
 # ---------------------------
 def import_wearables_csv(db: Session, file: UploadFile) -> dict:
-    """CSV columns: date (ISO), sleep_minutes (int), hrv (int)."""
+    """CSV columns: date (ISO), sleep_minutes (int), hrv (int).
+
+    Returns created_new, updated_existing (existing Entry rows touched), and
+    updated_or_created (their sum, i.e. CSV rows processed).
+    """
     content = file.file.read()
     df = pd.read_csv(io.BytesIO(content))
     if "date" not in df.columns:
@@ -1313,6 +1317,8 @@ def import_wearables_csv(db: Session, file: UploadFile) -> dict:
         if not e:
             e = Entry(date=d)
             creates += 1
+        else:
+            updates += 1
         if has_sleep and pd.notna(row.get("sleep_minutes")):
             try:
                 e.sleep_hours = float(row["sleep_minutes"]) / 60.0
@@ -1324,9 +1330,12 @@ def import_wearables_csv(db: Session, file: UploadFile) -> dict:
             except Exception:
                 pass
         db.add(e)
-        updates += 1
     db.commit()
-    return {"updated_or_created": int(updates), "created_new": int(creates)}
+    return {
+        "updated_or_created": int(creates + updates),
+        "created_new": int(creates),
+        "updated_existing": int(updates),
+    }
 
 # ---------------------------
 # FastAPI app & routes
