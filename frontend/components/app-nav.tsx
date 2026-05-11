@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Brain, CalendarCheck, ListChecks, Pill, BookOpen,
   BarChart3, Target, Heart, Lightbulb, MoreHorizontal,
-  Settings, LogOut,
+  Settings, LogOut, Activity,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +27,7 @@ const primaryNav = [
 ];
 
 const moreNav = [
+  { href: "/body-map", label: "Body map", icon: Activity },
   { href: "/goals", label: "Goals", icon: Target },
   { href: "/therapy", label: "Therapy", icon: Heart },
   { href: "/insights", label: "Insights", icon: Lightbulb },
@@ -41,7 +42,7 @@ export function AppNav({ user }: { user: User }) {
   const isMoreActive = moreNav.some((item) => pathname.startsWith(item.href));
 
   return (
-    <header className="sticky top-0 z-50 glass-strong">
+    <header className="sticky top-0 z-50 glass-strong safe-area-top">
       <div className="container mx-auto max-w-4xl flex items-center justify-between h-14 px-4">
         <Link href="/today" className="flex items-center gap-2 font-semibold">
           <Brain className="h-5 w-5 text-primary" />

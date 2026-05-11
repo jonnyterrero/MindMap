@@ -182,3 +182,33 @@
     transform: translateX(200%) skewX(-12deg);
   }
 }
+
+/* ============================================================
+   Safe-area insets (iOS notch, Android gesture bar, PWA, Capacitor)
+   Applied via utility classes; native shell uses viewport-fit=cover.
+   ============================================================ */
+@layer utilities {
+  .safe-area-inset {
+    padding-top: env(safe-area-inset-top);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+  }
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .safe-area-x {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* Apply default safe-area inset to <body> so root containers respect
+   the notch even without the explicit utility class. */
+body {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}

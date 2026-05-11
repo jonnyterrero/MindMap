@@ -40,7 +40,9 @@ export default async function AppLayout({
   return (
     <div className="min-h-screen">
       <AppNav user={user} />
-      <main className="container mx-auto max-w-4xl px-4 py-6">{children}</main>
+      <main className="container mx-auto max-w-4xl px-4 py-6 safe-area-bottom">
+        {children}
+      </main>
     </div>
   );
 }

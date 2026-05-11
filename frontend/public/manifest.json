@@ -1,10 +1,11 @@
 {
-  "name": "MindTrack - Mental Health Companion",
-  "short_name": "MindTrack",
-  "description": "Your comprehensive mental health and wellness tracking companion",
-  "start_url": "/",
+  "name": "MindMap",
+  "short_name": "MindMap",
+  "description": "Mood, sleep, routines, and wellness journaling.",
+  "start_url": "/today",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#D8B4FE",
+  "background_color": "#171614",
   "theme_color": "#D8B4FE",
   "orientation": "portrait-primary",
   "icons": [
@@ -12,7 +13,13 @@
       "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/icon-512.png",

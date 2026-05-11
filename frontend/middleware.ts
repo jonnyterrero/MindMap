@@ -2,7 +2,16 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 // Routes that do NOT require authentication
-const PUBLIC_ROUTES = ["/login", "/signup", "/auth/confirm"];
+const PUBLIC_ROUTES = [
+  "/login",
+  "/signup",
+  "/auth/confirm",
+  "/privacy",
+  "/terms",
+  "/medical-disclaimer",
+  "/data-deletion",
+  "/support",
+];
 
 // API routes that should return 401 JSON (not redirect to login page)
 const API_PREFIX = "/api/";
