@@ -33,9 +33,9 @@ export async function middleware(request: NextRequest) {
     // API auth check is handled below — will return 401 if no session
   }
 
-  // 3. Forward the pathname so server components / layouts can read it.
-  //    The (app) layout uses this to avoid an infinite redirect loop when
-  //    the consent gate fires on /consent itself.
+  // 3. Forward the pathname so server components / layouts can read it
+  //    via headers().get("x-pathname"). Next.js does not expose the
+  //    current path to RSC by default.
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-pathname", pathname);
 

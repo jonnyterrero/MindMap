@@ -8,6 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Brain, Loader2, Shield } from "lucide-react";
 
+// IDs must match the CHECK constraint on consent_records.consent_type:
+//   terms_of_service | privacy_policy | data_sharing |
+//   analytics_collection | email_notifications | push_notifications
 const CONSENT_ITEMS = [
   {
     id: "terms_of_service",
@@ -16,19 +19,19 @@ const CONSENT_ITEMS = [
     required: true,
   },
   {
-    id: "data_collection",
-    label: "Data Collection",
+    id: "privacy_policy",
+    label: "Privacy Policy",
     description: "I understand that my self-reported mental health data is stored securely and used only to provide personalized insights.",
     required: true,
   },
   {
-    id: "data_sharing_notice",
+    id: "data_sharing",
     label: "Data Sharing",
     description: "I understand that my data is never shared without my explicit consent. I control who sees my data and can revoke access at any time.",
     required: true,
   },
   {
-    id: "analytics_opt_in",
+    id: "analytics_collection",
     label: "Anonymous Analytics (optional)",
     description: "I allow anonymized, aggregated usage data to improve the app. No personal health data is included.",
     required: false,
@@ -38,16 +41,21 @@ const CONSENT_ITEMS = [
 export function ConsentForm() {
   const [isPending, startTransition] = useTransition();
   const [checked, setChecked] = useState<Record<string, boolean>>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const requiredItems = CONSENT_ITEMS.filter((c) => c.required);
   const allRequiredChecked = requiredItems.every((c) => checked[c.id]);
 
   function handleSubmit() {
+    setSubmitError(null);
     const consented = Object.entries(checked)
       .filter(([, v]) => v)
       .map(([k]) => k);
     startTransition(async () => {
-      await grantConsent(consented);
+      // grantConsent calls redirect() on success, which throws NEXT_REDIRECT
+      // and never reaches this line. We only get a return value on failure.
+      const result = await grantConsent(consented);
+      if (result?.error) setSubmitError(result.error);
     });
   }
 
@@ -102,6 +110,10 @@ export function ConsentForm() {
         >
           {isPending ? <Loader2 className="animate-spin" /> : "Get Started"}
         </Button>
+
+        {submitError && (
+          <p className="text-sm text-destructive text-center">{submitError}</p>
+        )}
       </CardContent>
     </Card>
   );
