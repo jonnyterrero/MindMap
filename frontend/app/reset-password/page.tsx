@@ -1,10 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { signIn } from "./actions";
 import { Brain } from "lucide-react";
+import { updatePassword } from "@/app/login/actions";
 import {
   Card,
   CardContent,
@@ -17,16 +15,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export default function LoginPage() {
-  const router = useRouter();
+export default function ResetPasswordPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(formData: FormData) {
     setError(null);
     setLoading(true);
-    const result = await signIn(formData);
-    // signIn redirects on success — only arrives here on error
+    const result = await updatePassword(formData);
+    // updatePassword redirects on success; we only get here on error
     if (result?.error) {
       setError(result.error);
       setLoading(false);
@@ -40,8 +37,10 @@ export default function LoginPage() {
           <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/20">
             <Brain className="h-6 w-6 text-primary" />
           </div>
-          <CardTitle className="text-2xl">Welcome Back</CardTitle>
-          <CardDescription>Sign in to your MindMap account</CardDescription>
+          <CardTitle className="text-2xl">Set a new password</CardTitle>
+          <CardDescription>
+            Choose a password at least 8 characters long.
+          </CardDescription>
         </CardHeader>
 
         <form action={handleSubmit}>
@@ -53,52 +52,36 @@ export default function LoginPage() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="you@example.com"
-                required
-                autoComplete="email"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                <Link
-                  href="/forgot-password"
-                  className="text-xs text-muted-foreground hover:text-primary transition-colors"
-                >
-                  Forgot password?
-                </Link>
-              </div>
+              <Label htmlFor="password">New password</Label>
               <Input
                 id="password"
                 name="password"
                 type="password"
                 placeholder="••••••••"
                 required
-                minLength={6}
-                autoComplete="current-password"
+                minLength={8}
+                autoComplete="new-password"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirm">Confirm password</Label>
+              <Input
+                id="confirm"
+                name="confirm"
+                type="password"
+                placeholder="••••••••"
+                required
+                minLength={8}
+                autoComplete="new-password"
               />
             </div>
           </CardContent>
 
-          <CardFooter className="flex flex-col gap-3">
+          <CardFooter>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Signing in…" : "Sign In"}
+              {loading ? "Updating…" : "Update password"}
             </Button>
-
-            <button
-              type="button"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              onClick={() => router.push("/signup")}
-            >
-              Don&apos;t have an account?{" "}
-              <span className="text-primary font-medium">Sign up</span>
-            </button>
           </CardFooter>
         </form>
       </Card>
