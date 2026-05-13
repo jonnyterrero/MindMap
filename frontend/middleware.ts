@@ -33,9 +33,15 @@ export async function middleware(request: NextRequest) {
     // API auth check is handled below — will return 401 if no session
   }
 
-  // 3. Build the Supabase client and refresh the session cookie
+  // 3. Forward the pathname so server components / layouts can read it.
+  //    The (app) layout uses this to avoid an infinite redirect loop when
+  //    the consent gate fires on /consent itself.
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-pathname", pathname);
+
+  // 4. Build the Supabase client and refresh the session cookie
   let supabaseResponse = NextResponse.next({
-    request,
+    request: { headers: requestHeaders },
   });
 
   const supabase = createServerClient(
@@ -50,7 +56,9 @@ export async function middleware(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
-          supabaseResponse = NextResponse.next({ request });
+          supabaseResponse = NextResponse.next({
+            request: { headers: requestHeaders },
+          });
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           );
