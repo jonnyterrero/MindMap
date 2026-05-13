@@ -33,6 +33,36 @@ export async function updateProfile(displayName: string, timezone: string) {
   return { success: true };
 }
 
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string,
+) {
+  if (!newPassword || newPassword.length < 8) {
+    return { error: "Password must be at least 8 characters." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user?.email) return { error: "Not authenticated" };
+
+  // Re-verify the current password before allowing the change.
+  // Prevents a hijacked session from silently rotating the password.
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password: currentPassword,
+  });
+  if (signInError) {
+    return { error: "Current password is incorrect." };
+  }
+
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) return { error: error.message };
+
+  return { success: true };
+}
+
 export async function requestDataDeletion(scope: string, reason: string | null) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

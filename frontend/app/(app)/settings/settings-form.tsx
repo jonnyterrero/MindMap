@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { updateProfile, requestDataDeletion } from "./actions";
+import { updateProfile, requestDataDeletion, changePassword } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,7 +20,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Save, Loader2, Check, Trash2, AlertTriangle, Download } from "lucide-react";
+import { Save, Loader2, Check, Trash2, AlertTriangle, Download, KeyRound } from "lucide-react";
 
 type Profile = Record<string, unknown> | null;
 
@@ -53,6 +53,33 @@ export function SettingsForm({ profile }: { profile: Profile }) {
   const [showDelete, setShowDelete] = useState(false);
   const [deleteReason, setDeleteReason] = useState("");
   const [deleteSubmitted, setDeleteSubmitted] = useState(false);
+
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSaved, setPasswordSaved] = useState(false);
+
+  function handleChangePassword() {
+    setPasswordError(null);
+    setPasswordSaved(false);
+    if (newPassword !== confirmPassword) {
+      setPasswordError("New passwords do not match.");
+      return;
+    }
+    startTransition(async () => {
+      const result = await changePassword(currentPassword, newPassword);
+      if (result.error) {
+        setPasswordError(result.error);
+      } else {
+        setPasswordSaved(true);
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+        setTimeout(() => setPasswordSaved(false), 4000);
+      }
+    });
+  }
 
   function handleSave() {
     setSaved(false);
@@ -126,6 +153,74 @@ export function SettingsForm({ profile }: { profile: Profile }) {
               {saved ? "Saved!" : "Save"}
             </Button>
             {error && <p className="text-sm text-destructive">{error}</p>}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="glass-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <KeyRound className="h-5 w-5 text-primary" /> Change Password
+          </CardTitle>
+          <CardDescription>
+            Re-verify your current password, then set a new one (at least 8 characters).
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="currentPassword">Current password</Label>
+            <Input
+              id="currentPassword"
+              type="password"
+              autoComplete="current-password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="newPassword">New password</Label>
+            <Input
+              id="newPassword"
+              type="password"
+              autoComplete="new-password"
+              minLength={8}
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">Confirm new password</Label>
+            <Input
+              id="confirmPassword"
+              type="password"
+              autoComplete="new-password"
+              minLength={8}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={handleChangePassword}
+              disabled={
+                isPending ||
+                !currentPassword ||
+                !newPassword ||
+                !confirmPassword
+              }
+            >
+              {isPending ? (
+                <Loader2 className="animate-spin" />
+              ) : passwordSaved ? (
+                <Check />
+              ) : (
+                <KeyRound />
+              )}
+              {passwordSaved ? "Password updated" : "Update password"}
+            </Button>
+            {passwordError && (
+              <p className="text-sm text-destructive">{passwordError}</p>
+            )}
           </div>
         </CardContent>
       </Card>
