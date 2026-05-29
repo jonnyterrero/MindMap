@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/card";
 import { RefreshCw, Loader2, AlertTriangle, TrendingUp, Brain, CheckCircle2, Info } from "lucide-react";
 import { formatDistanceToNow, parseISO } from "date-fns";
+import { MedicalDisclaimer } from "@/components/medical-disclaimer";
 
 type Insight = Record<string, unknown>;
 
@@ -39,6 +40,8 @@ export function InsightsView({ insights: initialInsights }: { insights: Insight[
         {isPending ? <Loader2 className="animate-spin" /> : <RefreshCw className="h-4 w-4" />}
         Refresh Insights
       </Button>
+
+      <MedicalDisclaimer variant="inline" />
 
       {insights.length === 0 ? (
         <Card className="glass-card">

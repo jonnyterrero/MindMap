@@ -86,11 +86,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // 5. Authenticated users hitting /login → send them to /today
+  // 5. Authenticated users hitting /login → send them to /home
   if (pathname === "/login" || pathname === "/signup") {
-    const todayUrl = request.nextUrl.clone();
-    todayUrl.pathname = "/today";
-    return NextResponse.redirect(todayUrl);
+    const homeUrl = request.nextUrl.clone();
+    homeUrl.pathname = "/home";
+    return NextResponse.redirect(homeUrl);
   }
 
   // 6. Session valid — return response with refreshed cookies

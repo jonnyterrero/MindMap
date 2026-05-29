@@ -1,5 +1,6 @@
 import { getProfile } from "./actions";
 import { SettingsForm } from "./settings-form";
+import { MedicalDisclaimer } from "@/components/medical-disclaimer";
 
 export default async function SettingsPage() {
   const profile = await getProfile();
@@ -13,6 +14,7 @@ export default async function SettingsPage() {
         </p>
       </div>
       <SettingsForm profile={profile} />
+      <MedicalDisclaimer variant="full" />
     </div>
   );
 }

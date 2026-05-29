@@ -32,6 +32,18 @@ export default async function AppLayout({
     redirect("/consent");
   }
 
+  // Onboarding gate: new users build their check-in before entering the app.
+  // /onboarding lives outside this route group, so there's no redirect loop.
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("onboarding_complete")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (!profile?.onboarding_complete) {
+    redirect("/onboarding");
+  }
+
   return (
     <div className="min-h-screen">
       <AppNav user={user} />

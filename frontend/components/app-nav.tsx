@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Brain, CalendarCheck, ListChecks, Pill, BookOpen,
+  Brain, Home, CalendarCheck, ListChecks, Pill, BookOpen,
   BarChart3, Target, Heart, Lightbulb, MoreHorizontal,
   Settings, LogOut, Activity,
 } from "lucide-react";
@@ -19,14 +19,15 @@ import { cn } from "@/lib/utils";
 import type { User } from "@supabase/supabase-js";
 
 const primaryNav = [
+  { href: "/home", label: "Home", icon: Home },
   { href: "/today", label: "Today", icon: CalendarCheck },
-  { href: "/routines", label: "Routines", icon: ListChecks },
-  { href: "/medications", label: "Meds", icon: Pill },
   { href: "/journal", label: "Journal", icon: BookOpen },
+  { href: "/medications", label: "Meds", icon: Pill },
   { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
 ];
 
 const moreNav = [
+  { href: "/routines", label: "Routines", icon: ListChecks },
   { href: "/body-map", label: "Body map", icon: Activity },
   { href: "/goals", label: "Goals", icon: Target },
   { href: "/therapy", label: "Therapy", icon: Heart },
@@ -44,7 +45,7 @@ export function AppNav({ user }: { user: User }) {
   return (
     <header className="sticky top-0 z-50 glass-strong safe-area-top">
       <div className="container mx-auto max-w-4xl flex items-center justify-between h-14 px-4">
-        <Link href="/today" className="flex items-center gap-2 font-semibold">
+        <Link href="/home" className="flex items-center gap-2 font-semibold">
           <Brain className="h-5 w-5 text-primary" />
           <span className="hidden sm:inline">MindMap</span>
         </Link>
