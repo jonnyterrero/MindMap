@@ -1,18 +1,23 @@
-import { getLatestInsights } from "./actions";
+import { getLatestInsights, getCorrelations } from "./actions";
 import { InsightsView } from "./insights-view";
+import { CorrelationsCard } from "./correlations-card";
 
 export default async function InsightsPage() {
-  const insights = await getLatestInsights();
+  const [insights, correlations] = await Promise.all([
+    getLatestInsights(),
+    getCorrelations(),
+  ]);
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Insights</h1>
         <p className="text-muted-foreground">
-          AI-powered analysis of your mental health patterns.
-          Every insight shows exactly why it was generated.
+          Patterns from your own check-ins. Every insight shows why it appeared —
+          and none of it is medical advice.
         </p>
       </div>
+      <CorrelationsCard correlations={correlations} />
       <InsightsView insights={insights} />
     </div>
   );
