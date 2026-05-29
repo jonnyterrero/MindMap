@@ -1,18 +1,20 @@
-import { getTodayEntry, getActiveRoutinesWithStatus, getBodySensations } from "./actions";
+import {
+  getTodayEntry,
+  getActiveRoutinesWithStatus,
+  getCheckinConfig,
+  getCheckInCount,
+} from "./actions";
 import { getTodayAdherence } from "@/app/(app)/medications/actions";
-import { TodayForm } from "./today-form";
-import { RoutineChecklist } from "./routine-checklist";
-import { MedChecklist } from "./med-checklist";
-import { BodySensations } from "./body-sensations";
+import { GuidedCheckin } from "./guided-checkin";
 
 export default async function TodayPage() {
-  const [entry, routines, meds] = await Promise.all([
+  const [entry, routines, meds, config, checkInsCompleted] = await Promise.all([
     getTodayEntry(),
     getActiveRoutinesWithStatus(),
     getTodayAdherence(),
+    getCheckinConfig(),
+    getCheckInCount(),
   ]);
-
-  const sensations = entry ? await getBodySensations(entry.id) : [];
 
   return (
     <div className="space-y-6">
@@ -25,13 +27,17 @@ export default async function TodayPage() {
           })}
         </h1>
         <p className="text-muted-foreground">
-          {entry ? "Your entry for today — update anytime." : "How are you doing today?"}
+          {entry ? "Your check-in for today — update anytime." : "How are you doing today?"}
         </p>
       </div>
-      {meds.length > 0 && <MedChecklist meds={meds} />}
-      {routines.length > 0 && <RoutineChecklist routines={routines} />}
-      <TodayForm initialData={entry} />
-      {entry && <BodySensations sensations={sensations} />}
+
+      <GuidedCheckin
+        initialEntry={entry}
+        routines={routines}
+        meds={meds}
+        cards={config.cards}
+        checkInsCompleted={checkInsCompleted}
+      />
     </div>
   );
 }
