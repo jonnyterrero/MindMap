@@ -1,5 +1,6 @@
 import { getProfile } from "./actions";
 import { SettingsForm } from "./settings-form";
+import { WeatherSettings } from "./weather-settings";
 import { MedicalDisclaimer } from "@/components/medical-disclaimer";
 
 export default async function SettingsPage() {
@@ -14,6 +15,10 @@ export default async function SettingsPage() {
         </p>
       </div>
       <SettingsForm profile={profile} />
+      <WeatherSettings
+        enabled={Boolean(profile?.weather_enabled)}
+        label={(profile?.weather_label as string | null) ?? null}
+      />
       <MedicalDisclaimer variant="full" />
     </div>
   );

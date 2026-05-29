@@ -85,14 +85,40 @@ export async function getCorrelations(): Promise<Correlation[]> {
   const { data: entries } = await supabase
     .from("mindmap_entries")
     .select(
-      "sleep_minutes, sleep_quality, mood_valence, anxiety, depression, focus, productivity, migraine_intensity"
+      "entry_date, sleep_minutes, sleep_quality, mood_valence, anxiety, depression, focus, productivity, migraine_intensity"
     )
     .eq("user_id", user.id)
     .order("entry_date", { ascending: false })
     .limit(90);
 
   if (!entries || entries.length < CORRELATION_MIN_DAYS) return [];
-  return computeCorrelations(entries as Record<string, unknown>[]);
+
+  // Merge weather (if the user tracks it) by entry_date so weather vs symptom
+  // correlations can surface. Best-effort: absent weather just means fewer pairs.
+  const { data: weather } = await supabase
+    .from("mindmap_weather_daily")
+    .select("entry_date, pressure, humidity, temp_max")
+    .eq("user_id", user.id)
+    .limit(90);
+
+  type WeatherRow = {
+    entry_date: string;
+    pressure: number | null;
+    humidity: number | null;
+    temp_max: number | null;
+  };
+  const weatherByDate = new Map<string, WeatherRow>(
+    (weather as WeatherRow[] | null ?? []).map((w) => [w.entry_date, w]),
+  );
+
+  const merged = (entries as Record<string, unknown>[]).map((e) => {
+    const w = weatherByDate.get(e.entry_date as string);
+    return w
+      ? { ...e, pressure: w.pressure, humidity: w.humidity, temp_max: w.temp_max }
+      : e;
+  });
+
+  return computeCorrelations(merged);
 }
 
 export async function getInsightHistory(insightType: string) {

@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase-server";
 import { revalidatePath } from "next/cache";
 import { calculateMindMapScore } from "@/lib/mindmap-score";
+import { syncTodayWeather } from "@/app/(app)/settings/actions";
 
 const DEFAULT_CHECKIN_CARDS = [
   "sleep",
@@ -362,6 +363,13 @@ export async function saveCheckIn(payload: EntryPayload) {
     .from("mindmap_entries")
     .update({ mindmap_score: score })
     .eq("id", entryId);
+
+  // Best-effort: pull today's weather snapshot if the user opted in.
+  try {
+    await syncTodayWeather();
+  } catch {
+    // Weather is strictly optional; never block a check-in on it.
+  }
 
   revalidatePath("/today");
   revalidatePath("/home");

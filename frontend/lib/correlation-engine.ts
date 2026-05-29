@@ -25,6 +25,11 @@ export const CORRELATION_METRICS: MetricDef[] = [
   { key: "focus", label: "Focus" },
   { key: "productivity", label: "Productivity" },
   { key: "migraine_intensity", label: "Migraine intensity" },
+  // Weather metrics (present only when weather tracking is enabled; merged in
+  // by entry_date before correlating).
+  { key: "pressure", label: "Barometric pressure" },
+  { key: "humidity", label: "Humidity" },
+  { key: "temp_max", label: "Temperature" },
 ];
 
 export type Strength = "weak" | "moderate" | "strong";
