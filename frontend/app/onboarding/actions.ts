@@ -2,28 +2,7 @@
 
 import { createClient } from "@/lib/supabase-server";
 import { redirect } from "next/navigation";
-
-export const FOCUS_OPTIONS = [
-  "migraine",
-  "anxiety",
-  "adhd",
-  "mood",
-  "sleep",
-  "medication",
-] as const;
-
-export const CHECKIN_CARDS = [
-  "sleep",
-  "mood",
-  "focus",
-  "migraine",
-  "medication",
-  "routines",
-  "journal",
-] as const;
-
-export type FocusOption = (typeof FOCUS_OPTIONS)[number];
-export type CheckinCard = (typeof CHECKIN_CARDS)[number];
+import { FOCUS_OPTIONS, CHECKIN_CARDS, type FocusOption } from "./constants";
 
 export async function checkOnboardingStatus(): Promise<boolean> {
   const supabase = await createClient();

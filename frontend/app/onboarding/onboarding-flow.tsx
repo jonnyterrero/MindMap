@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { completeOnboarding, type FocusOption } from "./actions";
+import { completeOnboarding } from "./actions";
+import type { FocusOption } from "./constants";
 import { MedicalDisclaimer } from "@/components/medical-disclaimer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
