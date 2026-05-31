@@ -1,4 +1,3 @@
-import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
 
 /**
@@ -6,7 +5,8 @@ import Anthropic from "@anthropic-ai/sdk";
  * ---------------------
  * One opt-in Claude call that turns a journal entry into a gentle, NON-clinical
  * reflection: a short summary, one reflective question, and emotional-theme tags.
- * Never diagnoses, never gives medical advice. Server-only — uses ANTHROPIC_API_KEY.
+ * Never diagnoses, never gives medical advice. Server-only — only imported by the
+ * journal "use server" actions; uses ANTHROPIC_API_KEY.
  */
 
 export const REFLECTION_MODEL = "claude-opus-4-8";

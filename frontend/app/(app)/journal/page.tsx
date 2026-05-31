@@ -1,8 +1,12 @@
-import { getJournalEntries } from "./actions";
+import { getJournalEntries, getAiReflectionEnabled, getJournalAnalyses } from "./actions";
 import { JournalList } from "./journal-list";
 
 export default async function JournalPage() {
-  const entries = await getJournalEntries();
+  const [entries, aiEnabled, analyses] = await Promise.all([
+    getJournalEntries(),
+    getAiReflectionEnabled(),
+    getJournalAnalyses(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -12,7 +16,7 @@ export default async function JournalPage() {
           Write freely about your day, thoughts, and experiences.
         </p>
       </div>
-      <JournalList entries={entries} />
+      <JournalList entries={entries} aiEnabled={aiEnabled} analyses={analyses} />
     </div>
   );
 }

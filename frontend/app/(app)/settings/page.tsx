@@ -1,6 +1,7 @@
 import { getProfile } from "./actions";
 import { SettingsForm } from "./settings-form";
 import { WeatherSettings } from "./weather-settings";
+import { AiSettings } from "./ai-settings";
 import { MedicalDisclaimer } from "@/components/medical-disclaimer";
 
 export default async function SettingsPage() {
@@ -19,6 +20,7 @@ export default async function SettingsPage() {
         enabled={Boolean(profile?.weather_enabled)}
         label={(profile?.weather_label as string | null) ?? null}
       />
+      <AiSettings enabled={Boolean(profile?.ai_reflection_enabled)} />
       <MedicalDisclaimer variant="full" />
     </div>
   );
