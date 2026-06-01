@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { createJournalEntry, deleteJournalEntry, type JournalPayload } from "./actions";
+import {
+  createJournalEntry,
+  deleteJournalEntry,
+  reflectOnJournalEntry,
+  type JournalPayload,
+  type JournalAnalysis,
+} from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,7 +20,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Plus, Trash2, Loader2, BookOpen, Lock, Globe } from "lucide-react";
+import { MedicalDisclaimer } from "@/components/medical-disclaimer";
+import { Plus, Trash2, Loader2, BookOpen, Lock, Globe, Sparkles } from "lucide-react";
 import { format, parseISO } from "date-fns";
 
 type Entry = Record<string, unknown>;
@@ -24,7 +31,15 @@ const MOOD_TAG_OPTIONS = [
   "grateful", "hopeful", "tired", "energetic", "overwhelmed",
 ];
 
-export function JournalList({ entries: initialEntries }: { entries: Entry[] }) {
+export function JournalList({
+  entries: initialEntries,
+  aiEnabled = false,
+  analyses = [],
+}: {
+  entries: Entry[];
+  aiEnabled?: boolean;
+  analyses?: JournalAnalysis[];
+}) {
   const [isPending, startTransition] = useTransition();
   const [entries, setEntries] = useState(initialEntries);
   const [showNew, setShowNew] = useState(false);
@@ -32,6 +47,31 @@ export function JournalList({ entries: initialEntries }: { entries: Entry[] }) {
   const [content, setContent] = useState("");
   const [moodTags, setMoodTags] = useState<string[]>([]);
   const [isPrivate, setIsPrivate] = useState(true);
+
+  const [analysisMap, setAnalysisMap] = useState<Record<string, JournalAnalysis>>(
+    Object.fromEntries(analyses.map((a) => [a.journal_entry_id, a])),
+  );
+  const [reflectingId, setReflectingId] = useState<string | null>(null);
+  const [reflectErrors, setReflectErrors] = useState<Record<string, string>>({});
+
+  async function handleReflect(entryId: string) {
+    setReflectingId(entryId);
+    setReflectErrors((prev) => {
+      const next = { ...prev };
+      delete next[entryId];
+      return next;
+    });
+    try {
+      const res = await reflectOnJournalEntry(entryId);
+      if ("error" in res) {
+        setReflectErrors((prev) => ({ ...prev, [entryId]: res.error }));
+      } else {
+        setAnalysisMap((prev) => ({ ...prev, [entryId]: res.analysis }));
+      }
+    } finally {
+      setReflectingId(null);
+    }
+  }
 
   function resetForm() {
     setTitle("");
@@ -197,6 +237,58 @@ export function JournalList({ entries: initialEntries }: { entries: Entry[] }) {
                         {tag}
                       </span>
                     ))}
+                  </div>
+                )}
+
+                {aiEnabled && !(entry.id as string).startsWith("temp-") && (
+                  <div className="mt-4 border-t pt-3">
+                    {analysisMap[entry.id as string] ? (
+                      <div className="space-y-2 rounded-lg bg-muted/50 p-3">
+                        <p className="flex items-center gap-1.5 text-xs font-medium text-primary">
+                          <Sparkles className="h-3.5 w-3.5" /> AI reflection
+                        </p>
+                        <p className="text-sm">{analysisMap[entry.id as string].summary}</p>
+                        {analysisMap[entry.id as string].reflection_question && (
+                          <p className="text-sm italic text-muted-foreground">
+                            {analysisMap[entry.id as string].reflection_question}
+                          </p>
+                        )}
+                        {analysisMap[entry.id as string].tags?.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {analysisMap[entry.id as string].tags.map((t) => (
+                              <span
+                                key={t}
+                                className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary"
+                              >
+                                {t}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        <MedicalDisclaimer variant="compact" />
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleReflect(entry.id as string)}
+                          disabled={reflectingId === (entry.id as string)}
+                        >
+                          {reflectingId === (entry.id as string) ? (
+                            <Loader2 className="animate-spin" />
+                          ) : (
+                            <Sparkles className="h-4 w-4" />
+                          )}
+                          Reflect with AI
+                        </Button>
+                        {reflectErrors[entry.id as string] && (
+                          <p className="text-xs text-destructive">
+                            {reflectErrors[entry.id as string]}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>

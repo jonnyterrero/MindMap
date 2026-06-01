@@ -167,6 +167,22 @@ export async function syncTodayWeather() {
   );
 }
 
+/** Enable/disable opt-in AI journal reflection. */
+export async function updateAiReflectionSetting(enabled: boolean) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { error } = await supabase
+    .from("profiles")
+    .upsert({ id: user.id, ai_reflection_enabled: enabled }, { onConflict: "id" });
+  if (error) return { error: error.message };
+
+  revalidatePath("/settings");
+  revalidatePath("/journal");
+  return { success: true };
+}
+
 export async function requestDataDeletion(scope: string, reason: string | null) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
