@@ -34,3 +34,7 @@ __pycache__/
 # Claude Code / local agent metrics (do not commit)
 .claude/
 MindMap/
+
+# Capacitor native projects (regenerate via cap add + cap sync)
+frontend/ios/
+frontend/android/
