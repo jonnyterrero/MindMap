@@ -25,6 +25,7 @@ export function ChatView({
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [crisis, setCrisis] = useState<CrisisSeverity | null>(null);
+  const [crisisEventId, setCrisisEventId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -49,7 +50,11 @@ export function ChatView({
       });
 
       const sev = res.headers.get("X-Crisis-Severity") as CrisisSeverity | null;
-      if (sev) setCrisis(sev);
+      const eventId = res.headers.get("X-Crisis-Event-Id");
+      if (sev) {
+        setCrisis(sev);
+        setCrisisEventId(eventId);
+      }
 
       if (!res.ok || !res.body) {
         setMessages((m) =>
@@ -122,7 +127,14 @@ export function ChatView({
         </div>
       </div>
 
-      <CrisisResourcesSheet severity={crisis} onClose={() => setCrisis(null)} />
+      <CrisisResourcesSheet
+        severity={crisis}
+        eventId={crisisEventId}
+        onClose={() => {
+          setCrisis(null);
+          setCrisisEventId(null);
+        }}
+      />
     </div>
   );
 }

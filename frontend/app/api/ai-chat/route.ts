@@ -19,7 +19,8 @@ Rules:
 /**
  * Streaming chat with the AI companion. Returns plain-text token stream.
  * Crisis detection runs on the user's message; if flagged, the severity is sent
- * back in the `X-Crisis-Severity` header (and a crisis event is logged).
+ * back in the `X-Crisis-Severity` header and event id in
+ * `X-Crisis-Event-Id` (and a crisis event is logged).
  */
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -50,14 +51,20 @@ export async function POST(req: Request) {
 
   // Crisis guardrail.
   const severity = detectCrisis(userMessage);
+  let crisisEventId: string | null = null;
   if (severity) {
-    await supabase.from("mindmap_crisis_events").insert({
-      user_id: user.id,
-      severity,
-      trigger_source: "ai_message",
-      trigger_content_ref: conversationId,
-      resources_shown: CRISIS_RESOURCES.map((r) => r.label),
-    });
+    const { data } = await supabase
+      .from("mindmap_crisis_events")
+      .insert({
+        user_id: user.id,
+        severity,
+        trigger_source: "ai_message",
+        trigger_content_ref: conversationId,
+        resources_shown: CRISIS_RESOURCES.map((r) => r.label),
+      })
+      .select("id")
+      .single();
+    crisisEventId = (data?.id as string | undefined) ?? null;
   }
 
   // Persist the user turn, then load the last 20 for context.
@@ -120,5 +127,6 @@ export async function POST(req: Request) {
 
   const headers: Record<string, string> = { "Content-Type": "text/plain; charset=utf-8" };
   if (severity) headers["X-Crisis-Severity"] = severity;
+  if (crisisEventId) headers["X-Crisis-Event-Id"] = crisisEventId;
   return new Response(stream, { headers });
 }
