@@ -3,6 +3,7 @@ import { SettingsForm } from "./settings-form";
 import { WeatherSettings } from "./weather-settings";
 import { AiSettings } from "./ai-settings";
 import { ProviderSharing } from "./provider-sharing";
+import { DataPrivacy } from "./data-privacy";
 import { getMyRole, getMyGrants } from "@/app/(app)/provider/actions";
 import { MedicalDisclaimer } from "@/components/medical-disclaimer";
 
@@ -28,6 +29,7 @@ export default async function SettingsPage() {
       />
       <AiSettings enabled={Boolean(profile?.ai_reflection_enabled)} />
       <ProviderSharing grants={grants} isProvider={role === "provider"} />
+      <DataPrivacy />
       <MedicalDisclaimer variant="full" />
     </div>
   );
