@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   createJournalEntry,
   deleteJournalEntry,
@@ -8,6 +9,7 @@ import {
   type JournalPayload,
   type JournalAnalysis,
 } from "./actions";
+import { createConversation } from "@/app/(app)/companion/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,7 +25,7 @@ import {
 import { MedicalDisclaimer } from "@/components/medical-disclaimer";
 import { CrisisResourcesSheet } from "@/components/crisis-resources-sheet";
 import type { CrisisSeverity } from "@/lib/crisis-detection";
-import { Plus, Trash2, Loader2, BookOpen, Lock, Globe, Sparkles } from "lucide-react";
+import { Plus, Trash2, Loader2, BookOpen, Lock, Globe, Sparkles, MessageCircle } from "lucide-react";
 import { format, parseISO } from "date-fns";
 
 type Entry = Record<string, unknown>;
@@ -56,6 +58,17 @@ export function JournalList({
   const [reflectingId, setReflectingId] = useState<string | null>(null);
   const [reflectErrors, setReflectErrors] = useState<Record<string, string>>({});
   const [crisis, setCrisis] = useState<{ severity: CrisisSeverity; eventId: string | null } | null>(null);
+  const router = useRouter();
+  const [talkingId, setTalkingId] = useState<string | null>(null);
+
+  function talkAboutEntry(entryId: string) {
+    setTalkingId(entryId);
+    startTransition(async () => {
+      const r = await createConversation(entryId);
+      if ("id" in r) router.push(`/companion/${r.id}`);
+      else setTalkingId(null);
+    });
+  }
 
   async function handleReflect(entryId: string) {
     setReflectingId(entryId);
@@ -244,6 +257,22 @@ export function JournalList({
                       </span>
                     ))}
                   </div>
+                )}
+
+                {!(entry.id as string).startsWith("temp-") && (
+                  <button
+                    type="button"
+                    onClick={() => talkAboutEntry(entry.id as string)}
+                    disabled={talkingId === (entry.id as string)}
+                    className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                  >
+                    {talkingId === (entry.id as string) ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <MessageCircle className="h-3 w-3" />
+                    )}
+                    Talk to AI about this entry
+                  </button>
                 )}
 
                 {aiEnabled && !(entry.id as string).startsWith("temp-") && (
