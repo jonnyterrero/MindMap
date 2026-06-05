@@ -2,10 +2,16 @@ import { getProfile } from "./actions";
 import { SettingsForm } from "./settings-form";
 import { WeatherSettings } from "./weather-settings";
 import { AiSettings } from "./ai-settings";
+import { ProviderSharing } from "./provider-sharing";
+import { getMyRole, getMyGrants } from "@/app/(app)/provider/actions";
 import { MedicalDisclaimer } from "@/components/medical-disclaimer";
 
 export default async function SettingsPage() {
-  const profile = await getProfile();
+  const [profile, role, grants] = await Promise.all([
+    getProfile(),
+    getMyRole(),
+    getMyGrants(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -21,6 +27,7 @@ export default async function SettingsPage() {
         label={(profile?.weather_label as string | null) ?? null}
       />
       <AiSettings enabled={Boolean(profile?.ai_reflection_enabled)} />
+      <ProviderSharing grants={grants} isProvider={role === "provider"} />
       <MedicalDisclaimer variant="full" />
     </div>
   );
