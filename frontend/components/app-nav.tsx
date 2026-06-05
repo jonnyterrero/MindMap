@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Brain, Home, CalendarCheck, ListChecks, Pill, BookOpen,
   BarChart3, Target, Heart, Lightbulb, MoreHorizontal,
-  Settings, LogOut, Activity, MessageCircle,
+  Settings, LogOut, Activity, MessageCircle, FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,11 +28,12 @@ const primaryNav = [
 
 const moreNav = [
   { href: "/companion", label: "Companion", icon: MessageCircle },
+  { href: "/insights", label: "Insights", icon: Lightbulb },
+  { href: "/reports", label: "Reports", icon: FileText },
   { href: "/routines", label: "Routines", icon: ListChecks },
   { href: "/body-map", label: "Body map", icon: Activity },
   { href: "/goals", label: "Goals", icon: Target },
   { href: "/therapy", label: "Therapy", icon: Heart },
-  { href: "/insights", label: "Insights", icon: Lightbulb },
 ];
 
 export function AppNav({ user }: { user: User }) {
