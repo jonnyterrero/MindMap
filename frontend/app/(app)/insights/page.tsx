@@ -1,11 +1,14 @@
 import { getLatestInsights, getCorrelations } from "./actions";
+import { getLatestPredictions } from "./prediction-actions";
 import { InsightsView } from "./insights-view";
 import { CorrelationsCard } from "./correlations-card";
+import { PredictionsSection } from "./predictions-section";
 
 export default async function InsightsPage() {
-  const [insights, correlations] = await Promise.all([
+  const [insights, correlations, predictions] = await Promise.all([
     getLatestInsights(),
     getCorrelations(),
+    getLatestPredictions(),
   ]);
 
   return (
@@ -17,6 +20,7 @@ export default async function InsightsPage() {
           and none of it is medical advice.
         </p>
       </div>
+      <PredictionsSection initial={predictions} />
       <CorrelationsCard correlations={correlations} />
       <InsightsView insights={insights} />
     </div>

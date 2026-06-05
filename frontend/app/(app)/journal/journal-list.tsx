@@ -21,6 +21,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { MedicalDisclaimer } from "@/components/medical-disclaimer";
+import { CrisisResourcesSheet } from "@/components/crisis-resources-sheet";
+import type { CrisisSeverity } from "@/lib/crisis-detection";
 import { Plus, Trash2, Loader2, BookOpen, Lock, Globe, Sparkles } from "lucide-react";
 import { format, parseISO } from "date-fns";
 
@@ -53,6 +55,7 @@ export function JournalList({
   );
   const [reflectingId, setReflectingId] = useState<string | null>(null);
   const [reflectErrors, setReflectErrors] = useState<Record<string, string>>({});
+  const [crisis, setCrisis] = useState<{ severity: CrisisSeverity; eventId: string | null } | null>(null);
 
   async function handleReflect(entryId: string) {
     setReflectingId(entryId);
@@ -106,7 +109,10 @@ export function JournalList({
     resetForm();
 
     startTransition(async () => {
-      await createJournalEntry(payload);
+      const res = await createJournalEntry(payload);
+      if (res && "success" in res && res.crisis) {
+        setCrisis({ severity: res.crisis.severity, eventId: res.crisis.eventId });
+      }
     });
   }
 
@@ -296,6 +302,12 @@ export function JournalList({
           ))}
         </div>
       )}
+
+      <CrisisResourcesSheet
+        severity={crisis?.severity ?? null}
+        eventId={crisis?.eventId}
+        onClose={() => setCrisis(null)}
+      />
     </div>
   );
 }

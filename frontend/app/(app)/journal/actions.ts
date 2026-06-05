@@ -3,6 +3,9 @@
 import { createClient } from "@/lib/supabase-server";
 import { revalidatePath } from "next/cache";
 import { reflectOnJournalText, REFLECTION_MODEL } from "@/lib/ai-reflection";
+import { detectCrisis, CRISIS_RESOURCES, type CrisisSeverity } from "@/lib/crisis-detection";
+
+export type CrisisFlag = { severity: CrisisSeverity; eventId: string | null };
 
 export type JournalAnalysis = {
   journal_entry_id: string;
@@ -35,19 +38,41 @@ export async function getJournalEntries() {
   return data ?? [];
 }
 
-export async function createJournalEntry(payload: JournalPayload) {
+export async function createJournalEntry(
+  payload: JournalPayload,
+): Promise<{ error: string } | { success: true; crisis: CrisisFlag | null }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
 
-  const { error } = await supabase.from("mindmap_journal_entries").insert({
-    user_id: user.id,
-    ...payload,
-  });
+  const { data: inserted, error } = await supabase
+    .from("mindmap_journal_entries")
+    .insert({ user_id: user.id, ...payload })
+    .select("id")
+    .single();
 
   if (error) return { error: error.message };
   revalidatePath("/journal");
-  return { success: true };
+
+  // Crisis trigger point: scan the saved content.
+  const severity = detectCrisis(payload.content);
+  let crisis: CrisisFlag | null = null;
+  if (severity) {
+    const { data: ev } = await supabase
+      .from("mindmap_crisis_events")
+      .insert({
+        user_id: user.id,
+        severity,
+        trigger_source: "journal_entry",
+        trigger_content_ref: inserted?.id ?? null,
+        resources_shown: CRISIS_RESOURCES.map((r) => r.label),
+      })
+      .select("id")
+      .single();
+    crisis = { severity, eventId: (ev?.id as string) ?? null };
+  }
+
+  return { success: true, crisis };
 }
 
 export async function updateJournalEntry(id: string, payload: Partial<JournalPayload>) {
