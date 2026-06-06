@@ -11,6 +11,7 @@ import {
 } from "./actions";
 import { createConversation } from "@/app/(app)/companion/actions";
 import { VoiceRecorder } from "@/components/voice-recorder";
+import { enqueueJournalEntry } from "@/lib/offline-queue";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -121,6 +122,12 @@ export function JournalList({
     };
     setEntries((prev) => [optimistic, ...prev]);
     resetForm();
+
+    // Offline-first: queue locally and sync on reconnect.
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      enqueueJournalEntry(payload);
+      return;
+    }
 
     startTransition(async () => {
       const res = await createJournalEntry(payload);

@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { signout } from "@/app/auth/actions";
+import { SyncIndicator } from "@/components/sync-indicator";
 import { cn } from "@/lib/utils";
 import type { User } from "@supabase/supabase-js";
 
@@ -47,10 +48,13 @@ export function AppNav({ user }: { user: User }) {
   return (
     <header className="sticky top-0 z-50 glass-strong safe-area-top">
       <div className="container mx-auto max-w-4xl flex items-center justify-between h-14 px-4">
-        <Link href="/home" className="flex items-center gap-2 font-semibold">
-          <Brain className="h-5 w-5 text-primary" />
-          <span className="hidden sm:inline">MindMap</span>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/home" className="flex items-center gap-2 font-semibold">
+            <Brain className="h-5 w-5 text-primary" />
+            <span className="hidden sm:inline">MindMap</span>
+          </Link>
+          <SyncIndicator />
+        </div>
 
         <nav className="flex items-center gap-1">
           {primaryNav.map(({ href, label, icon: Icon }) => (
