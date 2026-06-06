@@ -2,16 +2,20 @@ import { getProfile } from "./actions";
 import { SettingsForm } from "./settings-form";
 import { WeatherSettings } from "./weather-settings";
 import { AiSettings } from "./ai-settings";
+import { WearableSettings } from "./wearable-settings";
 import { ProviderSharing } from "./provider-sharing";
 import { DataPrivacy } from "./data-privacy";
 import { getMyRole, getMyGrants } from "@/app/(app)/provider/actions";
+import { getWearableSources, getRecentMetrics } from "./wearable-actions";
 import { MedicalDisclaimer } from "@/components/medical-disclaimer";
 
 export default async function SettingsPage() {
-  const [profile, role, grants] = await Promise.all([
+  const [profile, role, grants, sources, metrics] = await Promise.all([
     getProfile(),
     getMyRole(),
     getMyGrants(),
+    getWearableSources(),
+    getRecentMetrics(),
   ]);
 
   return (
@@ -27,6 +31,7 @@ export default async function SettingsPage() {
         enabled={Boolean(profile?.weather_enabled)}
         label={(profile?.weather_label as string | null) ?? null}
       />
+      <WearableSettings sources={sources} recentMetrics={metrics} />
       <AiSettings enabled={Boolean(profile?.ai_reflection_enabled)} />
       <ProviderSharing grants={grants} isProvider={role === "provider"} />
       <DataPrivacy />
