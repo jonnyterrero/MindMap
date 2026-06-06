@@ -63,6 +63,18 @@ export async function removeBodySensation(id: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
+
+  // Defense-in-depth (in addition to RLS): confirm this sensation's parent
+  // entry belongs to the caller before deleting. mindmap_body_sensations has no
+  // user_id column, so ownership is verified via the entry FK.
+  const { data: owned } = await supabase
+    .from("mindmap_body_sensations")
+    .select("id, mindmap_entries!inner(user_id)")
+    .eq("id", id)
+    .eq("mindmap_entries.user_id", user.id)
+    .maybeSingle();
+  if (!owned) return { error: "Not found" };
+
   const { error } = await supabase.from("mindmap_body_sensations").delete().eq("id", id);
   if (error) return { error: error.message };
   revalidatePath("/body-map");
