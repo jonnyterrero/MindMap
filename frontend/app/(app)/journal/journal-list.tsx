@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   createJournalEntry,
   deleteJournalEntry,
@@ -8,6 +9,9 @@ import {
   type JournalPayload,
   type JournalAnalysis,
 } from "./actions";
+import { createConversation } from "@/app/(app)/companion/actions";
+import { VoiceRecorder } from "@/components/voice-recorder";
+import { enqueueJournalEntry } from "@/lib/offline-queue";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +25,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { MedicalDisclaimer } from "@/components/medical-disclaimer";
-import { Plus, Trash2, Loader2, BookOpen, Lock, Globe, Sparkles } from "lucide-react";
+import { CrisisResourcesSheet } from "@/components/crisis-resources-sheet";
+import type { CrisisSeverity } from "@/lib/crisis-detection";
+import { Plus, Trash2, Loader2, BookOpen, Lock, Globe, Sparkles, MessageCircle } from "lucide-react";
 import { format, parseISO } from "date-fns";
 
 type Entry = Record<string, unknown>;
@@ -53,6 +59,18 @@ export function JournalList({
   );
   const [reflectingId, setReflectingId] = useState<string | null>(null);
   const [reflectErrors, setReflectErrors] = useState<Record<string, string>>({});
+  const [crisis, setCrisis] = useState<{ severity: CrisisSeverity; eventId: string | null } | null>(null);
+  const router = useRouter();
+  const [talkingId, setTalkingId] = useState<string | null>(null);
+
+  function talkAboutEntry(entryId: string) {
+    setTalkingId(entryId);
+    startTransition(async () => {
+      const r = await createConversation(entryId);
+      if ("id" in r) router.push(`/companion/${r.id}`);
+      else setTalkingId(null);
+    });
+  }
 
   async function handleReflect(entryId: string) {
     setReflectingId(entryId);
@@ -105,8 +123,17 @@ export function JournalList({
     setEntries((prev) => [optimistic, ...prev]);
     resetForm();
 
+    // Offline-first: queue locally and sync on reconnect.
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      enqueueJournalEntry(payload);
+      return;
+    }
+
     startTransition(async () => {
-      await createJournalEntry(payload);
+      const res = await createJournalEntry(payload);
+      if (res && "success" in res && res.crisis) {
+        setCrisis({ severity: res.crisis.severity, eventId: res.crisis.eventId });
+      }
     });
   }
 
@@ -120,9 +147,12 @@ export function JournalList({
   return (
     <div className="space-y-4">
       {!showNew ? (
-        <Button onClick={() => setShowNew(true)}>
-          <Plus className="h-4 w-4" /> New Entry
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setShowNew(true)}>
+            <Plus className="h-4 w-4" /> New Entry
+          </Button>
+          <VoiceRecorder />
+        </div>
       ) : (
         <Card className="glass-card">
           <CardHeader>
@@ -240,6 +270,22 @@ export function JournalList({
                   </div>
                 )}
 
+                {!(entry.id as string).startsWith("temp-") && (
+                  <button
+                    type="button"
+                    onClick={() => talkAboutEntry(entry.id as string)}
+                    disabled={talkingId === (entry.id as string)}
+                    className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                  >
+                    {talkingId === (entry.id as string) ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <MessageCircle className="h-3 w-3" />
+                    )}
+                    Talk to AI about this entry
+                  </button>
+                )}
+
                 {aiEnabled && !(entry.id as string).startsWith("temp-") && (
                   <div className="mt-4 border-t pt-3">
                     {analysisMap[entry.id as string] ? (
@@ -296,6 +342,12 @@ export function JournalList({
           ))}
         </div>
       )}
+
+      <CrisisResourcesSheet
+        severity={crisis?.severity ?? null}
+        eventId={crisis?.eventId}
+        onClose={() => setCrisis(null)}
+      />
     </div>
   );
 }

@@ -95,11 +95,19 @@ export async function getCorrelations(): Promise<Correlation[]> {
 
   // Merge weather (if the user tracks it) by entry_date so weather vs symptom
   // correlations can surface. Best-effort: absent weather just means fewer pairs.
-  const { data: weather } = await supabase
-    .from("mindmap_weather_daily")
-    .select("entry_date, pressure, humidity, temp_max")
-    .eq("user_id", user.id)
-    .limit(90);
+  // Body-map pain is merged the same way (max logged intensity per entry).
+  const [{ data: weather }, { data: sensations }] = await Promise.all([
+    supabase
+      .from("mindmap_weather_daily")
+      .select("entry_date, pressure, humidity, temp_max")
+      .eq("user_id", user.id)
+      .limit(90),
+    // RLS-scoped via entry_id; pull the parent entry_date to align with daily rows.
+    supabase
+      .from("mindmap_body_sensations")
+      .select("intensity, mindmap_entries!inner(entry_date)")
+      .limit(2000),
+  ]);
 
   type WeatherRow = {
     entry_date: string;
@@ -111,11 +119,29 @@ export async function getCorrelations(): Promise<Correlation[]> {
     (weather as WeatherRow[] | null ?? []).map((w) => [w.entry_date, w]),
   );
 
+  // Max body-pain intensity per entry_date (a day's worst logged sensation).
+  type SensationJoin = {
+    intensity: number | null;
+    mindmap_entries: { entry_date: string } | { entry_date: string }[] | null;
+  };
+  const bodyPainByDate = new Map<string, number>();
+  for (const s of (sensations as SensationJoin[] | null) ?? []) {
+    const rel = Array.isArray(s.mindmap_entries) ? s.mindmap_entries[0] : s.mindmap_entries;
+    const date = rel?.entry_date;
+    if (!date || typeof s.intensity !== "number") continue;
+    const prev = bodyPainByDate.get(date);
+    if (prev == null || s.intensity > prev) bodyPainByDate.set(date, s.intensity);
+  }
+
   const merged = (entries as Record<string, unknown>[]).map((e) => {
-    const w = weatherByDate.get(e.entry_date as string);
-    return w
-      ? { ...e, pressure: w.pressure, humidity: w.humidity, temp_max: w.temp_max }
-      : e;
+    const date = e.entry_date as string;
+    const w = weatherByDate.get(date);
+    const bodyPain = bodyPainByDate.get(date);
+    return {
+      ...e,
+      ...(w ? { pressure: w.pressure, humidity: w.humidity, temp_max: w.temp_max } : {}),
+      ...(bodyPain != null ? { body_pain: bodyPain } : {}),
+    };
   });
 
   return computeCorrelations(merged);

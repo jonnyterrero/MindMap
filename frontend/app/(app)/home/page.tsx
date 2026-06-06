@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { getHomeData } from "./actions";
+import { getTodayWeather } from "@/app/(app)/settings/actions";
 import { getPlanProgress } from "@/lib/guided-plan";
+import { AirQualityCard } from "@/components/air-quality-card";
 import { MedicalDisclaimer } from "@/components/medical-disclaimer";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -28,7 +30,10 @@ const SECONDARY_LINKS = [
 ];
 
 export default async function HomePage() {
-  const { todayScore, todayDone, checkInsCompleted, streak, latestInsight } = await getHomeData();
+  const [{ todayScore, todayDone, checkInsCompleted, streak, latestInsight }, weather] = await Promise.all([
+    getHomeData(),
+    getTodayWeather(),
+  ]);
   const plan = getPlanProgress(checkInsCompleted);
   const phaseLength = plan.phaseRange[1] - plan.phaseRange[0] + 1;
 
@@ -99,6 +104,8 @@ export default async function HomePage() {
           </CardContent>
         </Card>
       </div>
+
+      <AirQualityCard weather={weather} />
 
       {/* 4. One insight card — cautious, non-diagnostic */}
       <Card>
