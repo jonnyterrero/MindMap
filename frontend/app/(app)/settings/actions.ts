@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase-server";
 import { revalidatePath } from "next/cache";
-import { geocodeCity, fetchDailyWeather } from "@/lib/weather";
+import { geocodeCity, fetchDailyWeather, fetchAirQuality } from "@/lib/weather";
 
 export async function getProfile() {
   const supabase = await createClient();
@@ -124,17 +124,19 @@ export async function syncTodayWeather() {
 
   const { data: existing } = await supabase
     .from("mindmap_weather_daily")
-    .select("id")
+    .select("id, aqi")
     .eq("user_id", user.id)
     .eq("entry_date", today)
     .maybeSingle();
-  if (existing) return;
+  // Already fully synced today (weather + air quality)? Skip.
+  if (existing && existing.aqi != null) return;
 
-  const w = await fetchDailyWeather(
-    profile.weather_lat as number,
-    profile.weather_lon as number,
-    today,
-  );
+  const lat = profile.weather_lat as number;
+  const lon = profile.weather_lon as number;
+  const [w, air] = await Promise.all([
+    fetchDailyWeather(lat, lon, today),
+    fetchAirQuality(lat, lon, today),
+  ]);
   if (!w) return;
 
   // Compute pressure change vs the most recent prior snapshot, if any.
@@ -162,9 +164,37 @@ export async function syncTodayWeather() {
       pressure_change: pressureChange,
       precipitation: w.precipitation,
       weather_code: w.weather_code,
+      aqi: air?.aqi ?? null,
+      pm25: air?.pm25 ?? null,
+      pollen_tree: air?.pollen_tree ?? null,
+      pollen_grass: air?.pollen_grass ?? null,
+      pollen_weed: air?.pollen_weed ?? null,
+      pollen_level: air?.pollen_level ?? null,
     },
     { onConflict: "user_id,entry_date" },
   );
+}
+
+export type TodayWeather = {
+  temp_max: number | null;
+  aqi: number | null;
+  pm25: number | null;
+  pollen_level: string | null;
+} | null;
+
+/** Today's stored weather/air snapshot (or null if weather tracking is off). */
+export async function getTodayWeather(): Promise<TodayWeather> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const today = new Date().toISOString().split("T")[0];
+  const { data } = await supabase
+    .from("mindmap_weather_daily")
+    .select("temp_max, aqi, pm25, pollen_level")
+    .eq("user_id", user.id)
+    .eq("entry_date", today)
+    .maybeSingle();
+  return (data as TodayWeather) ?? null;
 }
 
 /** Enable/disable opt-in AI journal reflection. */
