@@ -25,6 +25,9 @@ export const CORRELATION_METRICS: MetricDef[] = [
   { key: "focus", label: "Focus" },
   { key: "productivity", label: "Productivity" },
   { key: "migraine_intensity", label: "Migraine intensity" },
+  // Body-map pain (max logged sensation intensity per day; merged in by
+  // entry_date, present only on days the user logged a body sensation).
+  { key: "body_pain", label: "Body pain" },
   // Weather metrics (present only when weather tracking is enabled; merged in
   // by entry_date before correlating).
   { key: "pressure", label: "Barometric pressure" },

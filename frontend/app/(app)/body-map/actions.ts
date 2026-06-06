@@ -59,7 +59,9 @@ export async function logBodySensation(input: {
   return { success: true };
 }
 
-export async function removeBodySensation(id: string) {
+export async function removeBodySensation(
+  id: string,
+): Promise<{ error: string } | { success: true }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };

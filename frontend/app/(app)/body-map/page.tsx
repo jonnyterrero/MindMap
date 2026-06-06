@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 type SensationRow = {
   id: string;
   body_part: string;
+  sensation: string | null;
   intensity: number;
   notes: string | null;
   created_at: string;
@@ -29,7 +30,7 @@ export default async function BodyMapPage() {
 
   const { data: sensations } = await supabase
     .from("mindmap_body_sensations")
-    .select("id, body_part, intensity, notes, created_at, entry_id")
+    .select("id, body_part, sensation, intensity, notes, created_at, entry_id")
     .gte("created_at", sinceIso)
     .order("created_at", { ascending: false })
     .limit(500);

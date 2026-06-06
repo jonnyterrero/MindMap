@@ -41,10 +41,16 @@ export interface WeatherSignal {
   pollen_level?: string | null; // low|moderate|high|very_high
 }
 
+export interface BodyPainSignal {
+  avgIntensity?: number | null; // mean logged body-pain severity 0..10 over recent window
+  daysWithPain?: number | null; // # of last-7 days with any logged sensation
+}
+
 export interface PredictionInput {
   entries: Record<string, unknown>[]; // newest first, up to ~14 days
   wearable?: WearableLatest;
   weather?: WeatherSignal;
+  bodyPain?: BodyPainSignal;
 }
 
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
@@ -117,6 +123,29 @@ function applyWearableAndWeather(
   return score;
 }
 
+/** Self-reported body-map pain feeds the pain-flare score directly and lightly
+ * informs migraine risk (somatic load). Independent of wearable HR signals. */
+function applyBodyPain(
+  type: PredictionType,
+  base: number,
+  factors: ContributingFactor[],
+  bodyPain: BodyPainSignal | undefined,
+): number {
+  const avgI = bodyPain?.avgIntensity ?? null;
+  if (avgI == null || avgI <= 0) return base;
+
+  if (type === "pain_flare") {
+    const weight = (avgI / 10) * 0.5;
+    factors.push({ factor: "logged_body_pain", weight, detail: `Avg logged body pain ${avgI.toFixed(1)}/10` });
+    return base + weight;
+  }
+  if (type === "migraine" && avgI >= 5) {
+    factors.push({ factor: "logged_body_pain", weight: 0.05, detail: `Avg logged body pain ${avgI.toFixed(1)}/10` });
+    return base + 0.05;
+  }
+  return base;
+}
+
 function baseFor(type: PredictionType, entries: Record<string, unknown>[], factors: ContributingFactor[]): number {
   const recent = entries.slice(0, 7);
   switch (type) {
@@ -162,6 +191,7 @@ function computeOne(type: PredictionType, input: PredictionInput): ComputedPredi
   const factors: ContributingFactor[] = [];
   let score = baseFor(type, input.entries, factors);
   score = applyWearableAndWeather(type, score, factors, input.wearable, input.weather);
+  score = applyBodyPain(type, score, factors, input.bodyPain);
   score = clamp01(score);
 
   // Confidence: data volume + recurrence + wearable presence.
@@ -173,6 +203,14 @@ function computeOne(type: PredictionType, input: PredictionInput): ComputedPredi
     factors.push({ factor: "recurrence", weight: 0, detail: `Pattern recurred ${recur}× in 7 days` });
   }
   if (input.wearable && (input.wearable.hrv != null || input.wearable.sleep_score != null)) confidence += 0.1;
+  if (
+    type === "pain_flare" &&
+    input.bodyPain?.daysWithPain != null &&
+    input.bodyPain.daysWithPain >= 3
+  ) {
+    confidence += 0.1;
+    factors.push({ factor: "body_pain_recurrence", weight: 0, detail: `Pain logged on ${input.bodyPain.daysWithPain} of last 7 days` });
+  }
   confidence = clamp01(confidence);
 
   return {

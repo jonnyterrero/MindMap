@@ -6,6 +6,7 @@ import {
   computePredictions,
   type WearableLatest,
   type WeatherSignal,
+  type BodyPainSignal,
 } from "@/lib/prediction-engine";
 
 export type PredictionRow = {
@@ -35,7 +36,7 @@ export async function runPredictionEngine(): Promise<{ error: string } | { predi
   since.setDate(since.getDate() - 14);
   const sinceISO = since.toISOString().split("T")[0];
 
-  const [entriesRes, wearableRes, weatherRes] = await Promise.all([
+  const [entriesRes, wearableRes, weatherRes, sensationsRes] = await Promise.all([
     supabase
       .from("mindmap_entries")
       .select(
@@ -58,6 +59,13 @@ export async function runPredictionEngine(): Promise<{ error: string } | { predi
       .order("entry_date", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    // Body-map sensations are RLS-scoped via entry_id → mindmap_entries.user_id.
+    supabase
+      .from("mindmap_body_sensations")
+      .select("intensity, created_at")
+      .gte("created_at", sinceISO)
+      .order("created_at", { ascending: false })
+      .limit(500),
   ]);
 
   const entries = entriesRes.data ?? [];
@@ -74,7 +82,27 @@ export async function runPredictionEngine(): Promise<{ error: string } | { predi
     pollen_level: (weatherRes.data?.pollen_level as string | null) ?? null,
   };
 
-  const computed = computePredictions({ entries, wearable, weather });
+  // Aggregate logged body pain: mean severity over the window + days-with-pain
+  // in the last 7 days (drives the pain-flare score and its confidence).
+  const sensRows = (sensationsRes.data ?? []) as { intensity: number; created_at: string }[];
+  const sevenAgoMs = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const intensities = sensRows
+    .map((r) => r.intensity)
+    .filter((n): n is number => typeof n === "number");
+  const recentDays = new Set<string>();
+  for (const r of sensRows) {
+    if (new Date(r.created_at).getTime() >= sevenAgoMs) {
+      recentDays.add(r.created_at.split("T")[0]);
+    }
+  }
+  const bodyPain: BodyPainSignal = {
+    avgIntensity: intensities.length
+      ? intensities.reduce((a, b) => a + b, 0) / intensities.length
+      : null,
+    daysWithPain: recentDays.size,
+  };
+
+  const computed = computePredictions({ entries, wearable, weather, bodyPain });
   const nowMs = Date.now();
   const out: PredictionRow[] = [];
 
