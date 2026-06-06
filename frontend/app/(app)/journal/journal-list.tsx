@@ -10,6 +10,7 @@ import {
   type JournalAnalysis,
 } from "./actions";
 import { createConversation } from "@/app/(app)/companion/actions";
+import { VoiceRecorder } from "@/components/voice-recorder";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -139,9 +140,12 @@ export function JournalList({
   return (
     <div className="space-y-4">
       {!showNew ? (
-        <Button onClick={() => setShowNew(true)}>
-          <Plus className="h-4 w-4" /> New Entry
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setShowNew(true)}>
+            <Plus className="h-4 w-4" /> New Entry
+          </Button>
+          <VoiceRecorder />
+        </div>
       ) : (
         <Card className="glass-card">
           <CardHeader>
