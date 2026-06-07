@@ -52,7 +52,10 @@ export async function getRecentMetrics(): Promise<RecentMetric[]> {
 }
 
 /** Manual metric entry (web). Stored with source_id null. */
-export async function logMetric(metric: WearableMetric, value: number) {
+export async function logMetric(
+  metric: WearableMetric,
+  value: number,
+): Promise<{ error: string } | { success: true }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
