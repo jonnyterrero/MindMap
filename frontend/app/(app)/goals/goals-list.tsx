@@ -163,7 +163,7 @@ export function GoalsList({ goals: initialGoals }: { goals: Goal[] }) {
                         {goal.category as string}
                       </span>
                     </div>
-                    {goal.description && (
+                    {(goal.description as string) && (
                       <p className="text-sm text-muted-foreground">{goal.description as string}</p>
                     )}
                     {target && (

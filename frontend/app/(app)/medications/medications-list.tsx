@@ -201,7 +201,7 @@ export function MedicationsList({ schedules: initialSchedules }: { schedules: Sc
                     }`}
                   >
                     {med.name as string}
-                    {med.dosage && (
+                    {(med.dosage as string) && (
                       <span className="text-muted-foreground font-normal ml-2">
                         {med.dosage as string}
                       </span>
@@ -209,7 +209,7 @@ export function MedicationsList({ schedules: initialSchedules }: { schedules: Sc
                   </p>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground">
                     <span>{med.frequency as string}</span>
-                    {med.reminder_time && (
+                    {(med.reminder_time as string) && (
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
                         {med.reminder_time as string}

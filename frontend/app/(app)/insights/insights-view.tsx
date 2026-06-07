@@ -98,7 +98,7 @@ export function InsightsView({ insights: initialInsights }: { insights: Insight[
                   </ul>
                 </div>
 
-                {insight.recommendation && (
+                {(insight.recommendation as string) && (
                   <div className="p-3 rounded-md bg-primary/5 text-sm">
                     <strong>Recommendation:</strong> {insight.recommendation as string}
                   </div>

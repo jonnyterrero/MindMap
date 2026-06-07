@@ -167,11 +167,11 @@ export function TherapyList({ sessions: initialSessions }: { sessions: Session[]
                 <CardTitle className="text-base flex items-center gap-2">
                   <Heart className="h-4 w-4 text-primary" />
                   {s.session_type as string} Session
-                  {s.therapist_name && <span className="text-muted-foreground font-normal">with {s.therapist_name as string}</span>}
+                  {(s.therapist_name as string) && <span className="text-muted-foreground font-normal">with {s.therapist_name as string}</span>}
                 </CardTitle>
                 <CardDescription>
                   {format(parseISO(s.session_date as string), "EEEE, MMMM d, yyyy")}
-                  {s.duration_minutes && ` · ${s.duration_minutes}min`}
+                  {s.duration_minutes ? ` · ${s.duration_minutes as number}min` : null}
                 </CardDescription>
               </div>
               <Button size="icon" variant="ghost" onClick={() => handleDelete(s.id as string)} disabled={isPending}>
@@ -187,8 +187,8 @@ export function TherapyList({ sessions: initialSessions }: { sessions: Session[]
                 <span>{MOOD_LABELS[(s.mood_after as number) ?? 0]}</span>
               </div>
             )}
-            {s.notes && <p className="text-sm">{s.notes as string}</p>}
-            {s.homework_assigned && (
+            {(s.notes as string) && <p className="text-sm">{s.notes as string}</p>}
+            {(s.homework_assigned as string) && (
               <p className="text-sm text-muted-foreground">Homework: {s.homework_assigned as string}</p>
             )}
           </CardContent>
