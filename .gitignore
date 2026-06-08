@@ -38,3 +38,12 @@ MindMap/
 # Capacitor native projects (regenerate via cap add + cap sync)
 frontend/ios/
 frontend/android/
+
+# Playwright
+playwright-report/
+test-results/
+blob-report/
+frontend/playwright-report/
+frontend/test-results/
+frontend/blob-report/
+frontend/e2e/.auth/
