@@ -1,0 +1,19 @@
+# Python env / cache
+.venv/
+__pycache__/
+*.py[cod]
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Local data, generated artifacts, and any real exports (NEVER commit user data)
+data/
+artifacts/
+*.parquet
+*.duckdb
+reports/*.json
+reports/*.png
+
+# Local secrets
+.env
+.env.local
