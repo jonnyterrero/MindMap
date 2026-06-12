@@ -33,6 +33,9 @@ def build_features(df: pd.DataFrame, spec: FeatureSpec = DEFAULT_SPEC) -> pd.Dat
     out = _sorted(df)
     grp = out.groupby(USER_COL, sort=False)
 
+    # Build all engineered columns into one dict and concat once — avoids the
+    # fragmented-frame PerformanceWarning and is much faster when called per point.
+    new_cols: dict[str, pd.Series] = {}
     for col in spec.base_columns:
         if col not in out.columns:
             # Column may be absent for a given dataset; skip gracefully so the
@@ -41,24 +44,26 @@ def build_features(df: pd.DataFrame, spec: FeatureSpec = DEFAULT_SPEC) -> pd.Dat
         s = out[col]
 
         for k in spec.lags:
-            out[f"{col}_lag{k}"] = grp[col].shift(k)
+            new_cols[f"{col}_lag{k}"] = grp[col].shift(k)
 
         for w in spec.rolling_windows:
             if "mean" in spec.rolling_stats:
-                out[f"{col}_rollmean{w}"] = grp[col].transform(
+                new_cols[f"{col}_rollmean{w}"] = grp[col].transform(
                     lambda x, w=w: x.rolling(w, min_periods=1).mean()
                 )
             if "std" in spec.rolling_stats:
-                out[f"{col}_rollstd{w}"] = grp[col].transform(
+                new_cols[f"{col}_rollstd{w}"] = grp[col].transform(
                     lambda x, w=w: x.rolling(w, min_periods=2).std()
                 )
 
         for k in spec.deltas:
-            out[f"{col}_delta{k}"] = s - grp[col].shift(k)
+            new_cols[f"{col}_delta{k}"] = s - grp[col].shift(k)
 
         if spec.add_missingness_flags:
-            out[f"{col}_missing"] = s.isna().astype("int8")
+            new_cols[f"{col}_missing"] = s.isna().astype("int8")
 
+    if new_cols:
+        out = pd.concat([out, pd.DataFrame(new_cols, index=out.index)], axis=1)
     return out
 
 

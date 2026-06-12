@@ -1,0 +1,69 @@
+{
+  "_comment": "Curated evidence priors. Auditable, human-readable, and the ONLY thing a recommendation may be grounded in (besides a retrieved passage). direction: + (factor up -> outcome up), - (factor up -> outcome down). strength: weak|moderate|strong. Citations are seed placeholders — replace with peer-reviewed sources before any clinical/public use.",
+  "priors": [
+    {
+      "factor": "sleep_deficit",
+      "outcome": "migraine",
+      "direction": "+",
+      "strength": "strong",
+      "citation": "MindMap seed summary — Sleep & symptoms",
+      "note": "Nights under ~6h, and irregular sleep timing, frequently precede next-day attacks."
+    },
+    {
+      "factor": "pressure_drop",
+      "outcome": "migraine",
+      "direction": "+",
+      "strength": "moderate",
+      "citation": "MindMap seed summary — Migraine triggers",
+      "note": "Falling barometric pressure is a reported correlate for weather-sensitive people."
+    },
+    {
+      "factor": "sleep_deficit",
+      "outcome": "anxiety",
+      "direction": "+",
+      "strength": "moderate",
+      "citation": "MindMap seed summary — Sleep & symptoms",
+      "note": "Poor or short sleep tends to coincide with higher next-day anxiety."
+    },
+    {
+      "factor": "sleep_irregularity",
+      "outcome": "migraine",
+      "direction": "+",
+      "strength": "moderate",
+      "citation": "MindMap seed summary — Sleep & symptoms",
+      "note": "Large night-to-night swings in sleep timing precede attacks more than stable sleep."
+    },
+    {
+      "factor": "low_activity",
+      "outcome": "mood",
+      "direction": "+",
+      "strength": "weak",
+      "citation": "MindMap seed summary — Mood, activity & routines",
+      "note": "Stretches of very low activity sometimes precede lower mood; direction uncertain."
+    },
+    {
+      "factor": "routine_disruption",
+      "outcome": "mood",
+      "direction": "+",
+      "strength": "weak",
+      "citation": "MindMap seed summary — Mood, activity & routines",
+      "note": "Gaps in usual routine can appear alongside dips in mood or sleep."
+    },
+    {
+      "factor": "outside_time",
+      "outcome": "mood",
+      "direction": "-",
+      "strength": "weak",
+      "citation": "MindMap seed summary — Mood, activity & routines",
+      "note": "More time outside / regular activity tends to coincide with steadier mood."
+    },
+    {
+      "factor": "reduced_sleep_need",
+      "outcome": "mania",
+      "direction": "+",
+      "strength": "moderate",
+      "citation": "MindMap seed summary — Mood, activity & routines",
+      "note": "Increased energy with reduced need for sleep is a tracked pattern around mood elevation. Review with a professional."
+    }
+  ]
+}

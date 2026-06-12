@@ -59,10 +59,20 @@ uv run pytest                       # tests + golden fixtures
 uv run ruff check .                 # lint
 uv run mypy                         # type check
 
-uv run python -m mindmap_ml.synthetic.generate   # (Phase 1) generate synthetic data
-uv run python -m mindmap_ml.eval.run             # (Phase 1) baseline + calibration report
-uv run python -m mindmap_ml.serving.score_batch --dry-run   # (Phase 5) batch scoring
+uv run python -m mindmap_ml.synthetic.generate              # (P1) sample synthetic data -> data/
+uv run python -m mindmap_ml.eval.run                        # (P1) baseline calibration+abstention report
+uv run python -m mindmap_ml.eval.compare                    # (P3) ML vs baseline, leave-user-out
+uv run python -m mindmap_ml.serving.score_batch --synthetic --dry-run   # (P5) batch scoring (no DB)
 ```
+
+Optional extras (lazy-imported; not needed for tests):
+
+```bash
+uv pip install '.[serving]'    # supabase client for live batch writes
+uv pip install '.[narrative]'  # anthropic client for LLM narratives
+```
+
+Docs: [SAFETY_POLICY.md](SAFETY_POLICY.md) · [MODEL_CARD.md](MODEL_CARD.md) · [VALIDATION_PLAN.md](VALIDATION_PLAN.md)
 
 ## Synthetic → real swap
 

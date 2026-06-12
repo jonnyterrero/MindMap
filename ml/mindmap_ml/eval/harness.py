@@ -200,3 +200,59 @@ def run_harness(
         per_type=per_type,
         generated_at=datetime.now(UTC).isoformat(),
     )
+
+
+def _type_report(t: str, y: np.ndarray, risk: np.ndarray, abst: np.ndarray, bins: int) -> TypeReport:
+    covered = (~abst) & (~np.isnan(risk))
+    s_cov, y_cov = risk[covered], y[covered]
+    n_points = int(len(y))
+    n_covered = int(covered.sum())
+    thr = metrics.binary_metrics_at_threshold(y_cov, s_cov, 0.5) if n_covered else None
+    return TypeReport(
+        prediction_type=t,
+        n_points=n_points,
+        n_covered=n_covered,
+        coverage=float((~abst).mean()) if n_points else float("nan"),
+        positive_rate=float(y_cov.mean()) if n_covered else float("nan"),
+        brier=metrics.brier_score(y_cov, s_cov) if n_covered else float("nan"),
+        ece=metrics.expected_calibration_error(y_cov, s_cov, bins) if n_covered else float("nan"),
+        auroc=metrics.auroc(y_cov, s_cov) if n_covered else float("nan"),
+        auprc=metrics.auprc(y_cov, s_cov) if n_covered else float("nan"),
+        precision_at_0_5=thr.precision if thr else float("nan"),
+        recall_at_0_5=thr.recall if thr else float("nan"),
+    )
+
+
+def report_from_scored(
+    model_version: str,
+    scored: pd.DataFrame,
+    labeled: pd.DataFrame,
+    *,
+    horizon: int = 1,
+    lookback: int = 30,
+    calibration_bins: int = 10,
+) -> HarnessReport:
+    """Build a report from a model's batch ``score_frame`` output + the labeled
+    frame. Evaluates the same point set as :func:`run_harness` (rows where all
+    labels are present) so the two are directly comparable.
+    """
+    merged = labeled.merge(scored, on=[USER_COL, DATE_COL], how="inner")
+    label_cols = list(LABELS.values())
+    pts = merged[merged[label_cols].notna().all(axis=1)]
+
+    per_type: dict[str, TypeReport] = {}
+    for t, lab in LABELS.items():
+        y = pts[lab].to_numpy(dtype=float)
+        risk = pts[f"risk_{t}"].to_numpy(dtype=float)
+        abst = pts[f"abstained_{t}"].to_numpy(dtype=bool)
+        per_type[t] = _type_report(t, y, risk, abst, calibration_bins)
+
+    return HarnessReport(
+        model_version=model_version,
+        n_users=int(pts[USER_COL].nunique()),
+        n_points_total=int(len(pts)),
+        horizon=horizon,
+        lookback=lookback,
+        per_type=per_type,
+        generated_at=datetime.now(UTC).isoformat(),
+    )

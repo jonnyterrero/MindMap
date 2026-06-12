@@ -10,7 +10,14 @@ requires-python = ">=3.11"
 dependencies = [
     "numpy>=1.26",
     "pandas>=2.1",
+    "scikit-learn>=1.4",
 ]
+
+[project.optional-dependencies]
+# Phase 5 serving (batch -> Supabase). Lazy-imported; core + tests don't need it.
+serving = ["supabase>=2.0"]
+# Phase 6 narrative (claude-opus-4-8). Lazy-imported; tests inject a fake client.
+narrative = ["anthropic>=0.40"]
 
 [dependency-groups]
 dev = [
@@ -37,6 +44,10 @@ ignore = ["E501"]  # long lines tolerated in docstrings / evidence text
 testpaths = ["tests"]
 pythonpath = ["."]
 addopts = "-q"
+filterwarnings = [
+    # harmless: a degenerate single-window predict can yield an all-NaN feature col
+    "ignore:Skipping features without any observed values:UserWarning",
+]
 
 [tool.mypy]
 python_version = "3.11"
