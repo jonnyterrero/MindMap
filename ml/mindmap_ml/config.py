@@ -25,6 +25,8 @@ REPORTS_DIR = ML_ROOT / "reports"
 BASELINE_MODEL_VERSION = "v1_rule_extended"
 # ML models stamp their own version once they pass acceptance (Phase 3+).
 ML_MODEL_VERSION = "v2_ml_assistive"
+# Tier-0 descriptive clinician summary (the current shipped, rules_only product).
+TIER0_SUMMARY_VERSION = "tier0_descriptive_v1"
 
 # --------------------------------------------------------------------------- #
 # Correlation thresholds — port of frontend/lib/correlation-engine.ts

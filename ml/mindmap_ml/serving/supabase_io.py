@@ -16,6 +16,8 @@ import pandas as pd
 ENTRIES_TABLE = "mindmap_entries"
 PREDICTIONS_TABLE = "mindmap_predictions"
 UPSERT_CONFLICT = "user_id,prediction_type,entry_date,model_version"
+SUMMARIES_TABLE = "mindmap_ml_summaries"
+SUMMARIES_CONFLICT = "user_id,period_end,model_version"
 
 
 class PredictionSink(Protocol):
@@ -56,6 +58,17 @@ class SupabaseSink:
         if not rows:
             return 0
         self.client.table(PREDICTIONS_TABLE).upsert(rows, on_conflict=UPSERT_CONFLICT).execute()
+        return len(rows)
+
+
+class SupabaseSummariesSink:
+    def __init__(self, client: Any) -> None:
+        self.client = client
+
+    def upsert(self, rows: list[dict[str, Any]]) -> int:
+        if not rows:
+            return 0
+        self.client.table(SUMMARIES_TABLE).upsert(rows, on_conflict=SUMMARIES_CONFLICT).execute()
         return len(rows)
 
 
