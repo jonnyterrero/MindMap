@@ -1,0 +1,55 @@
+name: ML summary batch (daily)
+
+# Runs the Python Tier-0 clinician-summary batch on a schedule and upserts
+# mindmap_ml_summaries (the app only reads them). The batch is Python, so this
+# is a GitHub Action — NOT a Vercel cron (those only hit Node routes).
+#
+# Inert until two repository secrets are set (Settings → Secrets and variables →
+# Actions → Secrets):
+#   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+# Idempotent (upsert on user_id+period_end+model_version) and re-runnable.
+
+on:
+  schedule:
+    - cron: "0 8 * * *" # daily 08:00 UTC
+  workflow_dispatch: {}
+
+concurrency:
+  group: ml-summary-batch
+  cancel-in-progress: false
+
+jobs:
+  summary:
+    name: Build & upsert clinician summaries
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check secrets (skip if unset)
+        id: guard
+        env:
+          KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          if [ -n "$KEY" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "SUPABASE_SERVICE_ROLE_KEY not set — skipping (inert until configured)."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup uv
+        if: steps.guard.outputs.run == 'true'
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Run summary batch
+        if: steps.guard.outputs.run == 'true'
+        working-directory: ml
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          uv sync
+          uv pip install supabase
+          uv run python -m mindmap_ml.serving.summary_batch
