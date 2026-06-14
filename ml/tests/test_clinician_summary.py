@@ -70,6 +70,23 @@ def test_thin_user_abstains_with_countdown() -> None:
     assert s.detected_patterns == []
 
 
+def test_partial_readiness_shows_trajectories_but_gates_patterns() -> None:
+    # >= 7 logged days but < 30 -> not abstained, trajectories shown, but patterns
+    # and forecasts are withheld until there's enough data to be reliable.
+    days = [date(2025, 1, 1) + timedelta(days=i) for i in range(12)]
+    df = pd.DataFrame({
+        "user_id": ["u1"] * 12, "entry_date": days,
+        "anxiety": [3.0, 4, 5, 6, 5, 4, 3, 4, 5, 6, 5, 4], "sleep_minutes": [420.0] * 12,
+        "depression": [2.0] * 12, "mood_valence": [1.0] * 12, "focus": [6.0] * 12,
+    })
+    s = build_clinician_summary(df)
+    assert s.abstained is False
+    assert s.readiness["ready"] is False
+    assert s.trajectories  # descriptive trajectories still shown
+    assert s.detected_patterns == []  # patterns gated until ~30 days
+    assert s.watch_items == []
+
+
 def test_phq9_item9_raises_crisis(rich_user) -> None:
     phq9 = score_phq9([0, 0, 0, 0, 0, 0, 0, 0, 2])  # item 9 positive
     s = build_clinician_summary(rich_user, phq9=phq9)
