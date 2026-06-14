@@ -159,32 +159,37 @@ def build_clinician_summary(
                 "mean": t.mean, "statement": _gate(t.statement, is_risk_claim=False),
             })
 
+    # Patterns + forecasts only surface once there's enough data to be reliable.
+    # The power analysis (synthetic/power) shows correlations at |r|>=0.3 need
+    # ~30 logged days (≈30% false positives at 14d), so we gate them behind the
+    # readiness threshold. Below it: trajectories + the countdown only.
     detected: list[GroundedPattern] = []
-    for factor, outcome_name, trig, out in _PATTERN_CANDIDATES:
-        cr = conditional_rate(df, trig, out)
-        if cr is None:
-            continue
-        meaningful = cr.lift is None or cr.lift >= 1.2 or cr.rate > cr.baseline
-        if not meaningful:
-            continue
-        ev = evidence_for(factor, outcome_name)
-        if not ev.is_grounded:  # no citation -> do not surface a recommendation-grade claim
-            continue
-        detected.append(GroundedPattern(_gate(cr.statement, is_risk_claim=True), ev.citations))
-
-    # Lagged correlations describe the user's OWN data (not advice) -> no citation required.
-    for c in compute_lagged_correlations(df)[:3]:
-        detected.append(GroundedPattern(_gate(c.statement, is_risk_claim=True), []))
-
     watch: list[dict[str, Any]] = []
-    for out in _FORECAST_EVENTS:
-        for h in (1, 7):
-            f = next_event_probability(df, out, horizon=h)
-            if not f.abstained and f.probability is not None:
-                watch.append({
-                    "outcome": out[0], "horizon": h, "probability": f.probability,
-                    "method": f.method, "statement": _gate(f.statement, is_risk_claim=True),
-                })
+    if readiness["ready"]:
+        for factor, outcome_name, trig, out in _PATTERN_CANDIDATES:
+            cr = conditional_rate(df, trig, out)
+            if cr is None:
+                continue
+            meaningful = cr.lift is None or cr.lift >= 1.2 or cr.rate > cr.baseline
+            if not meaningful:
+                continue
+            ev = evidence_for(factor, outcome_name)
+            if not ev.is_grounded:  # no citation -> do not surface a recommendation-grade claim
+                continue
+            detected.append(GroundedPattern(_gate(cr.statement, is_risk_claim=True), ev.citations))
+
+        # Lagged correlations describe the user's OWN data (not advice) -> no citation required.
+        for c in compute_lagged_correlations(df)[:3]:
+            detected.append(GroundedPattern(_gate(c.statement, is_risk_claim=True), []))
+
+        for out in _FORECAST_EVENTS:
+            for h in (1, 7):
+                f = next_event_probability(df, out, horizon=h)
+                if not f.abstained and f.probability is not None:
+                    watch.append({
+                        "outcome": out[0], "horizon": h, "probability": f.probability,
+                        "method": f.method, "statement": _gate(f.statement, is_risk_claim=True),
+                    })
 
     return ClinicianSummary(
         user_id=stats.user_id, date_range=date_range, abstained=False,
