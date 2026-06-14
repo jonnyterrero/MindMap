@@ -63,6 +63,7 @@ uv run python -m mindmap_ml.synthetic.generate              # (P1) sample synthe
 uv run python -m mindmap_ml.eval.run                        # (P1) baseline calibration+abstention report
 uv run python -m mindmap_ml.eval.compare                    # (P3) ML vs baseline, leave-user-out
 uv run python -m mindmap_ml.serving.score_batch --synthetic --dry-run   # (P5) batch scoring (no DB)
+uv run python -m mindmap_ml.reports.run_summary             # Tier-0 clinician summary (descriptive)
 ```
 
 Optional extras (lazy-imported; not needed for tests):
@@ -72,7 +73,17 @@ uv pip install '.[serving]'    # supabase client for live batch writes
 uv pip install '.[narrative]'  # anthropic client for LLM narratives
 ```
 
-Docs: [SAFETY_POLICY.md](SAFETY_POLICY.md) · [MODEL_CARD.md](MODEL_CARD.md) · [VALIDATION_PLAN.md](VALIDATION_PLAN.md)
+### Tier-0 descriptive layer (current default for scarce data)
+
+At n-of-1 the honest product is **descriptive, not predictive** — these ship that
+and are the baseline any learned model must beat: `features/calendar` (continuous
+calendar + adherence) · `insights/descriptive` (trends + conditional base rates) ·
+`insights/naive_forecast` (calibrated next-day/week rates) · `eval/walk_forward`
+(expanding-window backtest) · `synthetic/power` (data-sufficiency countdown) ·
+`labels/instruments` (PHQ-9/GAD-7) · `reports/clinician_summary` (integrative, gated,
+evidence-cited output).
+
+Docs: [SAFETY_POLICY.md](SAFETY_POLICY.md) · [MODEL_CARD.md](MODEL_CARD.md) · [VALIDATION_PLAN.md](VALIDATION_PLAN.md) · [DATA_DICTIONARY.md](DATA_DICTIONARY.md) · [LABELS_AND_INSTRUMENTS.md](LABELS_AND_INSTRUMENTS.md) · [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md)
 
 ## Synthetic → real swap
 
