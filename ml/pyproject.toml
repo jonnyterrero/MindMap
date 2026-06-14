@@ -1,0 +1,57 @@
+[project]
+name = "mindmap-ml"
+version = "0.1.0"
+description = "MindMap ML layer: safety-first, calibrated, abstaining mental-health pattern/risk engine (batch inference)."
+readme = "README.md"
+requires-python = ">=3.11"
+# Runtime deps grow per-phase. Phase 0/1 only need the data/feature/eval core.
+# Forecasting libs (scikit-learn), corpus/RAG libs (sentence-transformers, faiss),
+# and the Anthropic SDK are added in the phases that introduce them.
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.1",
+    "scikit-learn>=1.4",
+]
+
+[project.optional-dependencies]
+# Phase 5 serving (batch -> Supabase). Lazy-imported; core + tests don't need it.
+serving = ["supabase>=2.0"]
+# Phase 6 narrative (claude-opus-4-8). Lazy-imported; tests inject a fake client.
+narrative = ["anthropic>=0.40"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.6",
+    "mypy>=1.11",
+    "pandas-stubs>=2.1",
+]
+
+# Self-contained analysis/batch package — not a distributable library, so uv does
+# not need a build backend. `mindmap_ml` is importable via pytest's pythonpath.
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501"]  # long lines tolerated in docstrings / evidence text
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"
+filterwarnings = [
+    # harmless: a degenerate single-window predict can yield an all-NaN feature col
+    "ignore:Skipping features without any observed values:UserWarning",
+]
+
+[tool.mypy]
+python_version = "3.11"
+warn_unused_ignores = true
+warn_redundant_casts = true
+ignore_missing_imports = true
+files = ["mindmap_ml"]
