@@ -16,10 +16,10 @@ provenance (output → spans → step → model/version/rule) · uncertainty is 
 RAW TEXT
   └─▶ STAGE 1  Import & Digest        (deterministic)   [IMPLEMENTED: graph/ingest.py]
         normalize → segment → CHAR-OFFSET spans (reversible to raw)
-  └─▶ STAGE 2  Structured Generation  (probabilistic)   [planned: graph/generate.py]
+  └─▶ STAGE 2  Structured Generation  (probabilistic)   [IMPLEMENTED: graph/generate.py]
         foundation LLM (claude-opus-4-8, strict JSON) → candidate concepts/nodes/edges,
         each citing span_ids + self-confidence  (CANDIDATES ONLY)
-  └─▶ STAGE 3  External Verification  (hybrid)          [planned: graph/verify/*]
+  └─▶ STAGE 3  External Verification  (hybrid)          [IMPLEMENTED: graph/verify.py]
         (A) schema validator [det, fail-closed] (B) provenance checker [det]
         (C) NLI/entailment grounder [SEPARATE model] (D) graph consistency [rules+emb]
         (E) retrieval-evidence scorer [reuse evidence/] (F) calibrator → claim_class
@@ -107,8 +107,15 @@ Versioning: content-hash prompts, semver models/schema/rules/calibrators; every 
 
 ## Status
 - **Stage 1 — IMPLEMENTED**: `graph/ingest.py` + `graph/schema.py`, offset-integrity tested
-  (`tests/test_graph_ingest.py`). Deferred (future): markdown stripping, clause-level units,
-  ML/`spaCy` segmentation, real language detection.
-- **Stage 2 — planned**: `graph/generate.py` (LLM extractor + dedup + relation typing).
-- **Stage 3 — planned**: `graph/verify/*` (schema/provenance/NLI/graph/retrieval/calibrator).
-- **Persistence — planned**: `serving/` writer + Supabase migration; app read-only view.
+  (`tests/test_graph_ingest.py`). Deferred: markdown stripping, clause units, ML/`spaCy`
+  segmentation, real language detection.
+- **Stage 2 — IMPLEMENTED**: `graph/generate.py` — injectable LLM extractor (claude-opus-4-8,
+  strict JSON, span-cited candidates) + deterministic rule-skeleton fallback + TF-IDF dedup.
+  Deferred: trained relation classifier, sentence-transformer dedup, self-consistency sampling.
+- **Stage 3 — IMPLEMENTED**: `graph/verify.py` — schema + provenance + entailment (injectable;
+  default = conservative lexical placeholder) + graph consistency (dangling/contradiction) +
+  rule calibrator; fail-closed. `graph/pipeline.py` orchestrates Stage 1→2→3. Tested:
+  `tests/test_graph_{generate,verify,pipeline}.py` incl. agreement≠validation + fail-closed.
+  **Deferred (required before trusting outputs): a real NLI cross-encoder / adversarial-LLM
+  verifier, a trained calibrator, and the ~200-entry human gold + challenge set + eval harness.**
+- **Persistence — planned**: `serving/` writer + Supabase migration; app read-only mindmap view.
