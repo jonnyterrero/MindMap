@@ -20,6 +20,7 @@ no-provenance fail closed.
 
 from __future__ import annotations
 
+import json
 import re
 from datetime import UTC, datetime
 from typing import Protocol
@@ -93,6 +94,47 @@ class LexicalEntailment:
         if overlap >= 0.9:
             return ("entail", round(overlap, 3))
         return ("neutral", round(overlap, 3))
+
+
+class JSONLLM(Protocol):
+    def complete(self, system: str, user: str) -> str: ...
+
+
+_JSON_OBJ_RE = re.compile(r"\{.*\}", re.DOTALL)
+
+
+class LLMEntailment:
+    """Adversarial LLM grounder — a SEPARATE objective from the generator (skeptical
+    "is the HYPOTHESIS supported by the PREMISE alone?"), so generator/verifier
+    agreement is not self-fulfilling even if the same base model is used. The client
+    is injected (testable offline). Fail-closed to neutral on any parse/format error.
+    """
+
+    SYSTEM = (
+        "You are a strict fact-checker. Decide whether the HYPOTHESIS is supported by the "
+        "PREMISE alone. Be skeptical: answer 'entail' ONLY if the premise clearly states or "
+        "directly implies the hypothesis; 'contradict' if the premise asserts the opposite; "
+        "otherwise 'neutral'. Use no outside knowledge and do not treat metaphor as literal. "
+        'Output JSON only: {"label":"entail|neutral|contradict","score":0..1}.'
+    )
+
+    def __init__(self, client: JSONLLM, model: str = "claude-opus-4-8") -> None:
+        self.client = client
+        self.version = f"llm_adversarial_v0:{model}"
+
+    def classify(self, premise: str, hypothesis: str) -> tuple[str, float]:
+        if not hypothesis.strip():
+            return ("neutral", 0.0)
+        try:
+            raw = self.client.complete(self.SYSTEM, f"PREMISE:\n{premise}\n\nHYPOTHESIS:\n{hypothesis}")
+            m = _JSON_OBJ_RE.search(raw)
+            data = json.loads(m.group(0)) if m else {}
+            label = data.get("label")
+            if label not in ("entail", "neutral", "contradict"):
+                return ("neutral", 0.0)
+            return (label, max(0.0, min(1.0, float(data.get("score", 0.0)))))
+        except (ValueError, TypeError, AttributeError):
+            return ("neutral", 0.0)  # fail-closed
 
 
 def _calibrate(final_class: str, score: float, *, causal_no_cue: bool = False) -> Confidence:
