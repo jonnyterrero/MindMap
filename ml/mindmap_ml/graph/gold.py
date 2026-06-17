@@ -76,4 +76,30 @@ GOLD_CASES: tuple[GoldCase, ...] = (
             GoldClaim("hopeful", "emotion", "hopeful", True, "fragment"),
         ),
     ),
+    GoldCase(
+        "sarcasm",
+        "Oh sure, I just love being ignored.",
+        # figurative/sarcastic: lexical overlap is high, so a shallow grounder is
+        # confidently WRONG here (documented limitation -> motivates real NLI).
+        (GoldClaim("love being ignored", "emotion", "love being ignored", False, "sarcasm"),),
+    ),
+    GoldCase(
+        "emotional",
+        "I am so stressed I could scream.",
+        (
+            GoldClaim("feeling stressed", "emotion", "so stressed", True, "supported"),
+            # over-interpretation of intense language — must NOT surface
+            GoldClaim("severe clinical depression", "value", "could scream", False, "emotional"),
+        ),
+    ),
+    GoldCase(
+        "low_context",
+        "ugh.",
+        (GoldClaim("deep existential despair", "emotion", "ugh", False, "low_context"),),
+    ),
+    GoldCase(
+        "contradiction_negated",
+        "I don't feel sad anymore.",
+        (GoldClaim("feeling sad", "emotion", "feel sad", False, "contradiction"),),
+    ),
 )

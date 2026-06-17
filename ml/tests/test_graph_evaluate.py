@@ -31,11 +31,19 @@ def test_harness_surfaces_supported_claims() -> None:
     assert r.per_category["supported"]["ta"] >= 1 and r.per_category["fragment"]["ta"] == 3
 
 
-def test_harness_quantifies_metaphor_false_accept() -> None:
-    # the documented limitation: lexical can't tell figurative from literal
+def test_harness_quantifies_figurative_false_accepts() -> None:
+    # documented limitation: shallow grounding can't tell figurative from literal
     r = evaluate()
     assert r.per_category["metaphor"]["fa"] >= 1
-    assert 0.0 < r.false_accept_rate < 1.0  # there IS a measured false accept
+    assert r.per_category["sarcasm"]["fa"] >= 1
+    assert 0.0 < r.false_accept_rate < 1.0  # there ARE measured false accepts
+
+
+def test_harness_blocks_overinterpretation_and_low_context() -> None:
+    r = evaluate()
+    assert r.per_category["emotional"]["fa"] == 0  # intense language != severe diagnosis
+    assert r.per_category["low_context"]["fa"] == 0  # "ugh" != existential despair
+    assert r.per_category["contradiction"]["tr"] >= 2  # both negated claims blocked
 
 
 def test_harness_reports_calibration_and_serializes() -> None:
