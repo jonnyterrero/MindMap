@@ -119,9 +119,10 @@ Versioning: content-hash prompts, semver models/schema/rules/calibrators; every 
   orchestrates Stage 1→2→3.
 - **Verifier eval — IMPLEMENTED**: `graph/gold.py` (hand-authored gold + challenge cases) +
   `graph/evaluate.py` (measures TA/**false-accept**/FR/TR, precision/recall/F1, per-category,
-  Brier/ECE; CLI `python -m mindmap_ml.graph.evaluate`). Measured baseline (lexical grounder):
-  recall 1.0, **false-accept rate 0.25** — 0 on hallucination/contradiction/psychological,
-  but 1/1 on **metaphor** (literal-vs-figurative), which is exactly why the real grounder is needed.
+  Brier/ECE; CLI `python -m mindmap_ml.graph.evaluate`). Measured baseline (lexical grounder,
+  16-claim gold): recall 1.0, **false-accept rate 0.25** — 0 on hallucination / contradiction /
+  emotional-over-interpretation / low-context / psychological, but false-accepts the two
+  **figurative** cases (**metaphor + sarcasm**), which is exactly why the real grounder is needed.
   **Deferred (before trusting absolute numbers): wire `LLMEntailment`/cross-encoder in prod,
   expand gold to ~200 dual-annotated entries, trained calibrator, retrieval-evidence scorer.**
 - **Persistence — planned**: `serving/` writer + Supabase migration; app read-only mindmap view.
