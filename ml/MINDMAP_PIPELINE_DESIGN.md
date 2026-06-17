@@ -112,10 +112,16 @@ Versioning: content-hash prompts, semver models/schema/rules/calibrators; every 
 - **Stage 2 — IMPLEMENTED**: `graph/generate.py` — injectable LLM extractor (claude-opus-4-8,
   strict JSON, span-cited candidates) + deterministic rule-skeleton fallback + TF-IDF dedup.
   Deferred: trained relation classifier, sentence-transformer dedup, self-consistency sampling.
-- **Stage 3 — IMPLEMENTED**: `graph/verify.py` — schema + provenance + entailment (injectable;
-  default = conservative lexical placeholder) + graph consistency (dangling/contradiction) +
-  rule calibrator; fail-closed. `graph/pipeline.py` orchestrates Stage 1→2→3. Tested:
-  `tests/test_graph_{generate,verify,pipeline}.py` incl. agreement≠validation + fail-closed.
-  **Deferred (required before trusting outputs): a real NLI cross-encoder / adversarial-LLM
-  verifier, a trained calibrator, and the ~200-entry human gold + challenge set + eval harness.**
+- **Stage 3 — IMPLEMENTED**: `graph/verify.py` — schema + provenance + entailment + graph
+  consistency (dangling/contradiction) + rule calibrator; fail-closed. Two grounders:
+  `LexicalEntailment` (conservative default, no deps) and `LLMEntailment` (adversarial,
+  skeptical, injectable — a *separate objective* from the generator). `graph/pipeline.py`
+  orchestrates Stage 1→2→3.
+- **Verifier eval — IMPLEMENTED**: `graph/gold.py` (hand-authored gold + challenge cases) +
+  `graph/evaluate.py` (measures TA/**false-accept**/FR/TR, precision/recall/F1, per-category,
+  Brier/ECE; CLI `python -m mindmap_ml.graph.evaluate`). Measured baseline (lexical grounder):
+  recall 1.0, **false-accept rate 0.25** — 0 on hallucination/contradiction/psychological,
+  but 1/1 on **metaphor** (literal-vs-figurative), which is exactly why the real grounder is needed.
+  **Deferred (before trusting absolute numbers): wire `LLMEntailment`/cross-encoder in prod,
+  expand gold to ~200 dual-annotated entries, trained calibrator, retrieval-evidence scorer.**
 - **Persistence — planned**: `serving/` writer + Supabase migration; app read-only mindmap view.
