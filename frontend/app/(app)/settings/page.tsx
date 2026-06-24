@@ -1,5 +1,6 @@
 import { getProfile } from "./actions";
 import { SettingsForm } from "./settings-form";
+import { AppearanceSettings } from "./appearance-settings";
 import { WeatherSettings } from "./weather-settings";
 import { AiSettings } from "./ai-settings";
 import { WearableSettings } from "./wearable-settings";
@@ -27,6 +28,7 @@ export default async function SettingsPage() {
         </p>
       </div>
       <SettingsForm profile={profile} />
+      <AppearanceSettings />
       <WeatherSettings
         enabled={Boolean(profile?.weather_enabled)}
         label={(profile?.weather_label as string | null) ?? null}

@@ -34,6 +34,31 @@ export async function updateProfile(displayName: string, timezone: string) {
   return { success: true };
 }
 
+/**
+ * Persist the user's selected app color theme ("color mood").
+ * Validated against the allowed set to satisfy the DB CHECK constraint.
+ */
+export async function updateAppTheme(theme: string) {
+  const allowed = ["aurora", "ocean", "lavender", "rose", "graphite", "forest"];
+  if (!allowed.includes(theme)) return { error: "Unknown theme" };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ app_theme: theme })
+    .eq("id", user.id);
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/settings");
+  return { success: true };
+}
+
 export async function changePassword(
   currentPassword: string,
   newPassword: string,

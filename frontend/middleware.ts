@@ -20,7 +20,14 @@ const API_PREFIX = "/api/";
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 1. Always allow public page routes through without auth check
+  // 1. The marketing landing page ("/") is public. The page itself redirects
+  //    authenticated users to /home, so handle it as an exact match here
+  //    (a startsWith check would match every route).
+  if (pathname === "/") {
+    return NextResponse.next();
+  }
+
+  // 1b. Always allow public page routes through without auth check
   if (PUBLIC_ROUTES.some((route) => pathname.startsWith(route))) {
     return NextResponse.next();
   }

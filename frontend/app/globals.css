@@ -121,17 +121,136 @@
   }
   body {
     @apply bg-background text-foreground;
-    background: linear-gradient(
-      135deg,
-      rgba(244, 114, 182, 0.1) 0%,
-      rgba(216, 180, 254, 0.15) 25%,
-      rgba(255, 255, 255, 0.1) 50%,
-      rgba(216, 180, 254, 0.15) 75%,
-      rgba(244, 114, 182, 0.1) 100%
-    );
+    background: var(--app-bg-gradient);
     background-attachment: fixed;
     min-height: 100vh;
   }
+}
+
+/* ============================================================
+   App color themes ("color moods")
+   Selected in Settings → Appearance. The active theme id is applied
+   as `data-app-theme="<id>"` on <html> by the ThemeProvider, which
+   overrides the design tokens below. See lib/themes.ts.
+   ============================================================ */
+:root {
+  --app-bg-gradient: linear-gradient(
+    135deg,
+    rgba(244, 114, 182, 0.1) 0%,
+    rgba(216, 180, 254, 0.15) 25%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(216, 180, 254, 0.15) 75%,
+    rgba(244, 114, 182, 0.1) 100%
+  );
+}
+
+[data-app-theme="aurora"] {
+  --primary: oklch(0.72 0.16 305);
+  --primary-foreground: oklch(0.16 0 0);
+  --secondary: oklch(0.75 0.18 350);
+  --secondary-foreground: oklch(0.16 0 0);
+  --accent: oklch(0.78 0.12 270);
+  --accent-foreground: oklch(0.16 0 0);
+  --ring: rgba(196, 160, 254, 0.45);
+  --chart-1: oklch(0.72 0.16 305);
+  --chart-2: oklch(0.75 0.18 350);
+  --app-bg-gradient: linear-gradient(
+    135deg,
+    rgba(244, 114, 182, 0.12) 0%,
+    rgba(196, 160, 254, 0.16) 35%,
+    rgba(125, 211, 252, 0.12) 70%,
+    rgba(244, 114, 182, 0.1) 100%
+  );
+}
+
+[data-app-theme="ocean"] {
+  --primary: oklch(0.62 0.14 235);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.78 0.11 200);
+  --secondary-foreground: oklch(0.16 0 0);
+  --accent: oklch(0.75 0.12 195);
+  --accent-foreground: oklch(0.16 0 0);
+  --ring: rgba(56, 189, 248, 0.45);
+  --chart-1: oklch(0.62 0.14 235);
+  --chart-2: oklch(0.75 0.12 195);
+  --app-bg-gradient: linear-gradient(
+    135deg,
+    rgba(34, 211, 238, 0.12) 0%,
+    rgba(59, 130, 246, 0.15) 45%,
+    rgba(45, 212, 191, 0.12) 100%
+  );
+}
+
+[data-app-theme="lavender"] {
+  --primary: oklch(0.6 0.16 295);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.78 0.1 300);
+  --secondary-foreground: oklch(0.16 0 0);
+  --accent: oklch(0.72 0.12 285);
+  --accent-foreground: oklch(0.16 0 0);
+  --ring: rgba(167, 139, 250, 0.45);
+  --chart-1: oklch(0.6 0.16 295);
+  --chart-2: oklch(0.72 0.12 285);
+  --app-bg-gradient: linear-gradient(
+    135deg,
+    rgba(196, 181, 253, 0.16) 0%,
+    rgba(167, 139, 250, 0.16) 50%,
+    rgba(129, 140, 248, 0.13) 100%
+  );
+}
+
+[data-app-theme="rose"] {
+  --primary: oklch(0.66 0.19 15);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.78 0.15 30);
+  --secondary-foreground: oklch(0.16 0 0);
+  --accent: oklch(0.78 0.13 45);
+  --accent-foreground: oklch(0.16 0 0);
+  --ring: rgba(251, 113, 133, 0.45);
+  --chart-1: oklch(0.66 0.19 15);
+  --chart-2: oklch(0.78 0.13 45);
+  --app-bg-gradient: linear-gradient(
+    135deg,
+    rgba(253, 164, 175, 0.15) 0%,
+    rgba(244, 114, 182, 0.15) 50%,
+    rgba(253, 186, 116, 0.13) 100%
+  );
+}
+
+[data-app-theme="graphite"] {
+  --primary: oklch(0.45 0.02 260);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.7 0.02 260);
+  --secondary-foreground: oklch(0.16 0 0);
+  --accent: oklch(0.55 0.02 260);
+  --accent-foreground: oklch(0.98 0 0);
+  --ring: rgba(100, 116, 139, 0.45);
+  --chart-1: oklch(0.45 0.02 260);
+  --chart-2: oklch(0.62 0.02 260);
+  --app-bg-gradient: linear-gradient(
+    135deg,
+    rgba(100, 116, 139, 0.12) 0%,
+    rgba(51, 65, 85, 0.14) 50%,
+    rgba(82, 82, 91, 0.12) 100%
+  );
+}
+
+[data-app-theme="forest"] {
+  --primary: oklch(0.58 0.13 162);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.8 0.1 165);
+  --secondary-foreground: oklch(0.16 0 0);
+  --accent: oklch(0.7 0.11 180);
+  --accent-foreground: oklch(0.16 0 0);
+  --ring: rgba(45, 212, 191, 0.45);
+  --chart-1: oklch(0.58 0.13 162);
+  --chart-2: oklch(0.7 0.11 180);
+  --app-bg-gradient: linear-gradient(
+    135deg,
+    rgba(110, 231, 183, 0.14) 0%,
+    rgba(20, 184, 166, 0.15) 50%,
+    rgba(21, 128, 61, 0.12) 100%
+  );
 }
 
 @layer utilities {
@@ -149,6 +268,26 @@
 
   .glass-dark {
     @apply backdrop-blur-md bg-black/20 border border-white/10 shadow-lg;
+  }
+
+  /* Liquid-glass surfaces used by the design-system primitives. */
+  .glass-panel {
+    @apply backdrop-blur-xl bg-white/55 border border-white/30 shadow-sm;
+    box-shadow:
+      0 1px 0 0 rgba(255, 255, 255, 0.5) inset,
+      0 8px 24px -12px rgba(15, 23, 42, 0.18);
+  }
+
+  .glass-dock {
+    @apply backdrop-blur-xl bg-white/55 border border-white/40;
+    box-shadow:
+      0 1px 0 0 rgba(255, 255, 255, 0.6) inset,
+      0 12px 32px -10px rgba(15, 23, 42, 0.28);
+  }
+
+  .app-bg {
+    background: var(--app-bg-gradient);
+    background-attachment: fixed;
   }
 
   .animate-float {

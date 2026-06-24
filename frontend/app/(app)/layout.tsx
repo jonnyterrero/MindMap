@@ -1,7 +1,7 @@
 import type React from "react";
 import { createClient } from "@/lib/supabase-server";
 import { redirect } from "next/navigation";
-import { AppNav } from "@/components/app-nav";
+import { AppShell } from "@/components/app-shell";
 
 export default async function AppLayout({
   children,
@@ -36,7 +36,7 @@ export default async function AppLayout({
   // /onboarding lives outside this route group, so there's no redirect loop.
   const { data: profile } = await supabase
     .from("profiles")
-    .select("onboarding_complete")
+    .select("onboarding_complete, app_theme")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -45,11 +45,8 @@ export default async function AppLayout({
   }
 
   return (
-    <div className="min-h-screen">
-      <AppNav user={user} />
-      <main className="container mx-auto max-w-4xl px-4 py-6 safe-area-bottom">
-        {children}
-      </main>
-    </div>
+    <AppShell user={user} initialTheme={profile?.app_theme ?? null}>
+      {children}
+    </AppShell>
   );
 }
