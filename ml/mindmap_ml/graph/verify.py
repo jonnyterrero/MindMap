@@ -21,6 +21,7 @@ no-provenance fail closed.
 from __future__ import annotations
 
 import json
+import os
 import re
 from datetime import UTC, datetime
 from typing import Protocol
@@ -100,6 +101,36 @@ class JSONLLM(Protocol):
     def complete(self, system: str, user: str) -> str: ...
 
 
+GROUNDER_MODEL = "claude-sonnet-4-6"
+
+
+class AnthropicGrounder:
+    """Lazy Anthropic client for the adversarial entailment grounder.
+    Mirrors the pattern in narrative/compose.py — lazy import, env-based key."""
+
+    def __init__(self, model: str = GROUNDER_MODEL) -> None:
+        self.model = model
+
+    def complete(self, system: str, user: str) -> str:  # pragma: no cover - network
+        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        if not api_key:
+            raise RuntimeError("ANTHROPIC_API_KEY not set; LLM grounder unavailable.")
+        try:
+            import anthropic
+        except ImportError as e:
+            raise RuntimeError(
+                "anthropic not installed — `uv pip install 'mindmap-ml[narrative]'`"
+            ) from e
+        client = anthropic.Anthropic(api_key=api_key)
+        resp = client.messages.create(
+            model=self.model,
+            max_tokens=100,
+            system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
+            messages=[{"role": "user", "content": user}],
+        )
+        return "".join(b.text for b in resp.content if getattr(b, "type", None) == "text").strip()
+
+
 _JSON_OBJ_RE = re.compile(r"\{.*\}", re.DOTALL)
 
 
@@ -135,6 +166,19 @@ class LLMEntailment:
             return (label, max(0.0, min(1.0, float(data.get("score", 0.0)))))
         except (ValueError, TypeError, AttributeError):
             return ("neutral", 0.0)  # fail-closed
+
+
+def make_entailment(prefer_llm: bool = True) -> Entailment:
+    """Return the best available entailment grounder.
+
+    When *prefer_llm* is True and ``ANTHROPIC_API_KEY`` is set, returns an
+    ``LLMEntailment`` backed by the real Anthropic client. Otherwise falls back
+    to the conservative ``LexicalEntailment``.
+    """
+    if prefer_llm and os.environ.get("ANTHROPIC_API_KEY"):
+        grounder = AnthropicGrounder()
+        return LLMEntailment(grounder, model=grounder.model)
+    return LexicalEntailment()
 
 
 def _calibrate(final_class: str, score: float, *, causal_no_cue: bool = False) -> Confidence:

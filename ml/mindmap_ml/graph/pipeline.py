@@ -10,7 +10,7 @@ from __future__ import annotations
 from .generate import LLMClient, generate_candidates
 from .ingest import digest
 from .schema import MindmapArtifact
-from .verify import Entailment, verify_graph
+from .verify import Entailment, make_entailment, verify_graph
 
 
 def run_pipeline(
@@ -24,4 +24,5 @@ def run_pipeline(
 ) -> MindmapArtifact:
     doc, spans = digest(raw_text, user_id=user_id, source_type=source_type)
     candidate = generate_candidates(doc, spans, client=extractor_client, dedup=dedup)
-    return verify_graph(doc, spans, candidate, entailment=entailment)
+    ent = entailment if entailment is not None else make_entailment()
+    return verify_graph(doc, spans, candidate, entailment=ent)
