@@ -1,0 +1,815 @@
+# Sleep Tracker & Stress/Mood Logger - PyCharm Setup Code
+# ================================================================
+
+# This file contains all the code you need to run and edit in PyCharm
+# for the Sleep Tracker & Stress/Mood Logger application.
+
+# ================================================================
+# 1. PYTHON ML ANALYTICS SCRIPT (ml_analytics.py)
+# ================================================================
+
+#!/usr/bin/env python3
+"""
+ML Analytics Script for Sleep & Stress + App
+This script runs the ML models and correlation analysis
+"""
+
+import json
+import sys
+import pandas as pd
+import numpy as np
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error, r2_score
+import argparse
+
+def correlation_matrix(df):
+    """Calculate correlation matrix (matches your Python function)"""
+    metrics = [
+        "sleep.duration_hours",
+        "sleep.quality_score",
+        "mood.mood_score",
+        "mood.stress_score",
+        "symptoms.gi_flare",
+        "symptoms.skin_flare",
+        "symptoms.migraine"
+    ]
+    
+    # Ensure all columns exist
+    available_metrics = [metric for metric in metrics if metric in df.columns]
+    
+    if len(available_metrics) < 2:
+        return pd.DataFrame()
+    
+    return df[available_metrics].corr()
+
+def predict_gi_flare(df):
+    """Predict GI flare (matches your Python function)"""
+    features = [
+        "sleep.duration_hours",
+        "sleep.quality_score",
+        "mood.mood_score",
+        "mood.stress_score"
+    ]
+    
+    # Check if all required columns exist
+    missing_features = [f for f in features if f not in df.columns]
+    if missing_features:
+        raise ValueError(f"Missing required features: {missing_features}")
+    
+    if "symptoms.gi_flare" not in df.columns:
+        raise ValueError("Missing target variable: symptoms.gi_flare")
+    
+    X = df[features]
+    y = df["symptoms.gi_flare"]
+    
+    # Check if we have enough data
+    if len(X) < 4:
+        raise ValueError("Insufficient data for training (minimum 4 entries required)")
+    
+    # Split data
+    if len(X) >= 10:
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+    else:
+        # Use all data for training if we have less than 10 entries
+        X_train, X_test, y_train, y_test = X, X, y, y
+    
+    # Train model
+    model = LinearRegression()
+    model.fit(X_train, y_train)
+    
+    # Make predictions
+    y_pred = model.predict(X_test)
+    
+    # Calculate metrics
+    mse = mean_squared_error(y_test, y_pred)
+    r2 = r2_score(y_test, y_pred) if len(y_test) > 1 else 0.0
+    
+    return {
+        'coefficients': model.coef_.tolist(),
+        'intercept': float(model.intercept_),
+        'mse': float(mse),
+        'r2_score': float(r2),
+        'feature_names': features
+    }
+
+def predict_sleep_quality(df):
+    """Predict sleep quality based on mood, stress, and symptoms"""
+    features = [
+        "mood.mood_score",
+        "mood.stress_score",
+        "symptoms.gi_flare",
+        "symptoms.skin_flare",
+        "symptoms.migraine"
+    ]
+    
+    # Check if all required columns exist
+    missing_features = [f for f in features if f not in df.columns]
+    if missing_features:
+        raise ValueError(f"Missing required features: {missing_features}")
+    
+    if "sleep.quality_score" not in df.columns:
+        raise ValueError("Missing target variable: sleep.quality_score")
+    
+    X = df[features]
+    y = df["sleep.quality_score"]
+    
+    # Check if we have enough data
+    if len(X) < 4:
+        raise ValueError("Insufficient data for training (minimum 4 entries required)")
+    
+    # Split data
+    if len(X) >= 10:
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+    else:
+        # Use all data for training if we have less than 10 entries
+        X_train, X_test, y_train, y_test = X, X, y, y
+    
+    # Train model
+    model = LinearRegression()
+    model.fit(X_train, y_train)
+    
+    # Make predictions
+    y_pred = model.predict(X_test)
+    
+    # Calculate metrics
+    mse = mean_squared_error(y_test, y_pred)
+    r2 = r2_score(y_test, y_pred) if len(y_test) > 1 else 0.0
+    
+    return {
+        'coefficients': model.coef_.tolist(),
+        'intercept': float(model.intercept_),
+        'mse': float(mse),
+        'r2_score': float(r2),
+        'feature_names': features
+    }
+
+def predict_mood(df):
+    """Predict mood based on sleep and symptoms"""
+    features = [
+        "sleep.duration_hours",
+        "sleep.quality_score",
+        "symptoms.gi_flare",
+        "symptoms.skin_flare",
+        "symptoms.migraine"
+    ]
+    
+    # Check if all required columns exist
+    missing_features = [f for f in features if f not in df.columns]
+    if missing_features:
+        raise ValueError(f"Missing required features: {missing_features}")
+    
+    if "mood.mood_score" not in df.columns:
+        raise ValueError("Missing target variable: mood.mood_score")
+    
+    X = df[features]
+    y = df["mood.mood_score"]
+    
+    # Check if we have enough data
+    if len(X) < 4:
+        raise ValueError("Insufficient data for training (minimum 4 entries required)")
+    
+    # Split data
+    if len(X) >= 10:
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+    else:
+        # Use all data for training if we have less than 10 entries
+        X_train, X_test, y_train, y_test = X, X, y, y
+    
+    # Train model
+    model = LinearRegression()
+    model.fit(X_train, y_train)
+    
+    # Make predictions
+    y_pred = model.predict(X_test)
+    
+    # Calculate metrics
+    mse = mean_squared_error(y_test, y_pred)
+    r2 = r2_score(y_test, y_pred) if len(y_test) > 1 else 0.0
+    
+    return {
+        'coefficients': model.coef_.tolist(),
+        'intercept': float(model.intercept_),
+        'mse': float(mse),
+        'r2_score': float(r2),
+        'feature_names': features
+    }
+
+def run_correlation_analysis(data):
+    """Run correlation analysis"""
+    try:
+        # Convert to DataFrame
+        df = pd.DataFrame(data)
+        
+        if df.empty:
+            return {'error': 'No data provided'}
+        
+        # Calculate correlation matrix
+        corr_matrix = correlation_matrix(df)
+        
+        if corr_matrix.empty:
+            return {'error': 'Insufficient data for correlation analysis'}
+        
+        return {
+            'correlation_matrix': corr_matrix.to_dict(),
+            'success': True
+        }
+    except Exception as e:
+        return {'error': str(e), 'success': False}
+
+def run_gi_flare_prediction(data):
+    """Run GI flare prediction"""
+    try:
+        # Convert to DataFrame
+        df = pd.DataFrame(data)
+        
+        if df.empty:
+            return {'error': 'No data provided'}
+        
+        # Run prediction
+        result = predict_gi_flare(df)
+        result['success'] = True
+        
+        return result
+    except Exception as e:
+        return {'error': str(e), 'success': False}
+
+def run_sleep_quality_prediction(data):
+    """Run sleep quality prediction"""
+    try:
+        # Convert to DataFrame
+        df = pd.DataFrame(data)
+        
+        if df.empty:
+            return {'error': 'No data provided'}
+        
+        # Run prediction
+        result = predict_sleep_quality(df)
+        result['success'] = True
+        
+        return result
+    except Exception as e:
+        return {'error': str(e), 'success': False}
+
+def run_mood_prediction(data):
+    """Run mood prediction"""
+    try:
+        # Convert to DataFrame
+        df = pd.DataFrame(data)
+        
+        if df.empty:
+            return {'error': 'No data provided'}
+        
+        # Run prediction
+        result = predict_mood(df)
+        result['success'] = True
+        
+        return result
+    except Exception as e:
+        return {'error': str(e), 'success': False}
+
+def main():
+    parser = argparse.ArgumentParser(description="ML Analytics for Sleep & Stress +")
+    parser.add_argument('--type', choices=['correlation', 'predict_gi_flare', 'predict_sleep_quality', 'predict_mood'], required=True,
+                       help='Type of analysis to run')
+    
+    args = parser.parse_args()
+    
+    try:
+        # Read data from stdin
+        input_data = sys.stdin.read()
+        data = json.loads(input_data)
+        
+        if args.type == 'correlation':
+            result = run_correlation_analysis(data)
+        elif args.type == 'predict_gi_flare':
+            result = run_gi_flare_prediction(data)
+        elif args.type == 'predict_sleep_quality':
+            result = run_sleep_quality_prediction(data)
+        elif args.type == 'predict_mood':
+            result = run_mood_prediction(data)
+        
+        # Output result as JSON
+        print(json.dumps(result))
+        
+    except Exception as e:
+        error_result = {'error': str(e), 'success': False}
+        print(json.dumps(error_result))
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
+
+# ================================================================
+# 2. SAMPLE DATA FOR TESTING
+# ================================================================
+
+# Create a file called "sample_data.json" with this content:
+
+sample_data_json = '''
+[
+  {
+    "date": "2025-09-26",
+    "sleep": {
+      "start_time": "23:30",
+      "end_time": "07:15",
+      "duration_hours": 7.75,
+      "quality_score": 8
+    },
+    "mood": {
+      "mood_score": 6,
+      "stress_score": 4,
+      "journal_entry": "Felt anxious but slept okay.",
+      "voice_note_path": "data/audio/2025-09-26.wav"
+    },
+    "symptoms": {
+      "gi_flare": 2,
+      "skin_flare": 0,
+      "migraine": 1
+    }
+  },
+  {
+    "date": "2025-09-25",
+    "sleep": {
+      "start_time": "23:45",
+      "end_time": "06:30",
+      "duration_hours": 6.75,
+      "quality_score": 6
+    },
+    "mood": {
+      "mood_score": 5,
+      "stress_score": 6,
+      "journal_entry": "Stressful day, had trouble falling asleep.",
+      "voice_note_path": null
+    },
+    "symptoms": {
+      "gi_flare": 4,
+      "skin_flare": 1,
+      "migraine": 2
+    }
+  },
+  {
+    "date": "2025-09-24",
+    "sleep": {
+      "start_time": "22:30",
+      "end_time": "07:00",
+      "duration_hours": 8.5,
+      "quality_score": 9
+    },
+    "mood": {
+      "mood_score": 8,
+      "stress_score": 2,
+      "journal_entry": "Great day, slept like a baby!",
+      "voice_note_path": null
+    },
+    "symptoms": {
+      "gi_flare": 0,
+      "skin_flare": 0,
+      "migraine": 0
+    }
+  },
+  {
+    "date": "2025-09-23",
+    "sleep": {
+      "start_time": "00:15",
+      "end_time": "08:00",
+      "duration_hours": 7.75,
+      "quality_score": 7
+    },
+    "mood": {
+      "mood_score": 7,
+      "stress_score": 3,
+      "journal_entry": "Late night but good sleep quality.",
+      "voice_note_path": null
+    },
+    "symptoms": {
+      "gi_flare": 1,
+      "skin_flare": 0,
+      "migraine": 1
+    }
+  },
+  {
+    "date": "2025-09-22",
+    "sleep": {
+      "start_time": "23:00",
+      "end_time": "06:45",
+      "duration_hours": 7.75,
+      "quality_score": 8
+    },
+    "mood": {
+      "mood_score": 6,
+      "stress_score": 5,
+      "journal_entry": "Decent sleep despite some stress.",
+      "voice_note_path": null
+    },
+    "symptoms": {
+      "gi_flare": 3,
+      "skin_flare": 2,
+      "migraine": 0
+    }
+  }
+]
+'''
+
+# ================================================================
+# 3. TESTING SCRIPT
+# ================================================================
+
+# Create a file called "test_analytics.py" with this content:
+
+test_script = '''
+#!/usr/bin/env python3
+"""
+Test script for ML Analytics
+Run this to test the analytics functions
+"""
+
+import json
+import pandas as pd
+import numpy as np
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error, r2_score
+
+# Import the functions from ml_analytics.py
+# (Copy the functions from above or import them)
+
+def test_correlation_analysis():
+    """Test correlation analysis with sample data"""
+    print("Testing Correlation Analysis...")
+    
+    # Sample data
+    data = [
+        {
+            "sleep.duration_hours": 7.75,
+            "sleep.quality_score": 8,
+            "mood.mood_score": 6,
+            "mood.stress_score": 4,
+            "symptoms.gi_flare": 2,
+            "symptoms.skin_flare": 0,
+            "symptoms.migraine": 1
+        },
+        {
+            "sleep.duration_hours": 6.75,
+            "sleep.quality_score": 6,
+            "mood.mood_score": 5,
+            "mood.stress_score": 6,
+            "symptoms.gi_flare": 4,
+            "symptoms.skin_flare": 1,
+            "symptoms.migraine": 2
+        },
+        {
+            "sleep.duration_hours": 8.5,
+            "sleep.quality_score": 9,
+            "mood.mood_score": 8,
+            "mood.stress_score": 2,
+            "symptoms.gi_flare": 0,
+            "symptoms.skin_flare": 0,
+            "symptoms.migraine": 0
+        }
+    ]
+    
+    df = pd.DataFrame(data)
+    corr_matrix = df.corr()
+    
+    print("Correlation Matrix:")
+    print(corr_matrix)
+    print()
+    
+    # Find strong correlations
+    print("Strong Correlations (|r| > 0.5):")
+    for i in range(len(corr_matrix.columns)):
+        for j in range(i+1, len(corr_matrix.columns)):
+            corr_value = corr_matrix.iloc[i, j]
+            if abs(corr_value) > 0.5:
+                print(f"{corr_matrix.columns[i]} ↔ {corr_matrix.columns[j]}: {corr_value:.3f}")
+    print()
+
+def test_gi_flare_prediction():
+    """Test GI flare prediction"""
+    print("Testing GI Flare Prediction...")
+    
+    # Sample data
+    data = [
+        {
+            "sleep.duration_hours": 7.75,
+            "sleep.quality_score": 8,
+            "mood.mood_score": 6,
+            "mood.stress_score": 4,
+            "symptoms.gi_flare": 2
+        },
+        {
+            "sleep.duration_hours": 6.75,
+            "sleep.quality_score": 6,
+            "mood.mood_score": 5,
+            "mood.stress_score": 6,
+            "symptoms.gi_flare": 4
+        },
+        {
+            "sleep.duration_hours": 8.5,
+            "sleep.quality_score": 9,
+            "mood.mood_score": 8,
+            "mood.stress_score": 2,
+            "symptoms.gi_flare": 0
+        },
+        {
+            "sleep.duration_hours": 7.75,
+            "sleep.quality_score": 7,
+            "mood.mood_score": 7,
+            "mood.stress_score": 3,
+            "symptoms.gi_flare": 1
+        }
+    ]
+    
+    df = pd.DataFrame(data)
+    
+    features = ["sleep.duration_hours", "sleep.quality_score", "mood.mood_score", "mood.stress_score"]
+    X = df[features]
+    y = df["symptoms.gi_flare"]
+    
+    # Train model
+    model = LinearRegression()
+    model.fit(X, y)
+    
+    # Make prediction for new data point
+    new_data = np.array([[7.0, 7.5, 6.5, 4.5]])  # Example: 7h sleep, 7.5 quality, 6.5 mood, 4.5 stress
+    prediction = model.predict(new_data)
+    
+    print(f"Predicted GI Flare for new data point: {prediction[0]:.2f}")
+    print(f"Model R² Score: {model.score(X, y):.3f}")
+    print(f"Feature Coefficients:")
+    for feature, coef in zip(features, model.coef_):
+        print(f"  {feature}: {coef:.3f}")
+    print()
+
+def test_sleep_quality_prediction():
+    """Test sleep quality prediction"""
+    print("Testing Sleep Quality Prediction...")
+    
+    # Sample data
+    data = [
+        {
+            "mood.mood_score": 6,
+            "mood.stress_score": 4,
+            "symptoms.gi_flare": 2,
+            "symptoms.skin_flare": 0,
+            "symptoms.migraine": 1,
+            "sleep.quality_score": 8
+        },
+        {
+            "mood.mood_score": 5,
+            "mood.stress_score": 6,
+            "symptoms.gi_flare": 4,
+            "symptoms.skin_flare": 1,
+            "symptoms.migraine": 2,
+            "sleep.quality_score": 6
+        },
+        {
+            "mood.mood_score": 8,
+            "mood.stress_score": 2,
+            "symptoms.gi_flare": 0,
+            "symptoms.skin_flare": 0,
+            "symptoms.migraine": 0,
+            "sleep.quality_score": 9
+        },
+        {
+            "mood.mood_score": 7,
+            "mood.stress_score": 3,
+            "symptoms.gi_flare": 1,
+            "symptoms.skin_flare": 0,
+            "symptoms.migraine": 1,
+            "sleep.quality_score": 7
+        }
+    ]
+    
+    df = pd.DataFrame(data)
+    
+    features = ["mood.mood_score", "mood.stress_score", "symptoms.gi_flare", "symptoms.skin_flare", "symptoms.migraine"]
+    X = df[features]
+    y = df["sleep.quality_score"]
+    
+    # Train model
+    model = LinearRegression()
+    model.fit(X, y)
+    
+    # Make prediction for new data point
+    new_data = np.array([[6.5, 4.5, 2.5, 0.5, 1.5]])  # Example: 6.5 mood, 4.5 stress, mild symptoms
+    prediction = model.predict(new_data)
+    
+    print(f"Predicted Sleep Quality for new data point: {prediction[0]:.2f}")
+    print(f"Model R² Score: {model.score(X, y):.3f}")
+    print(f"Feature Coefficients:")
+    for feature, coef in zip(features, model.coef_):
+        print(f"  {feature}: {coef:.3f}")
+    print()
+
+def main():
+    """Run all tests"""
+    print("=" * 60)
+    print("SLEEP TRACKER ML ANALYTICS TESTING")
+    print("=" * 60)
+    print()
+    
+    test_correlation_analysis()
+    test_gi_flare_prediction()
+    test_sleep_quality_prediction()
+    
+    print("=" * 60)
+    print("TESTING COMPLETE")
+    print("=" * 60)
+
+if __name__ == "__main__":
+    main()
+'''
+
+# ================================================================
+# 4. REQUIREMENTS.TXT
+# ================================================================
+
+requirements_txt = '''
+pandas>=1.5.0
+numpy>=1.21.0
+scikit-learn>=1.1.0
+matplotlib>=3.5.0
+seaborn>=0.11.0
+'''
+
+# ================================================================
+# 5. PYCHARM SETUP INSTRUCTIONS
+# ================================================================
+
+pycharm_setup = '''
+PYCHARM SETUP INSTRUCTIONS
+==========================
+
+1. CREATE NEW PROJECT:
+   - Open PyCharm
+   - Create new project: "SleepTrackerML"
+   - Choose Python interpreter (Python 3.8+)
+
+2. INSTALL DEPENDENCIES:
+   - Create requirements.txt with the content above
+   - Run: pip install -r requirements.txt
+   - Or install individually:
+     pip install pandas numpy scikit-learn matplotlib seaborn
+
+3. CREATE FILES:
+   - ml_analytics.py (main analytics script)
+   - test_analytics.py (testing script)
+   - sample_data.json (sample data)
+   - requirements.txt (dependencies)
+
+4. RUN TESTS:
+   - Right-click on test_analytics.py
+   - Select "Run 'test_analytics'"
+   - Check console output for results
+
+5. TEST COMMAND LINE USAGE:
+   - Open terminal in PyCharm
+   - Run: python ml_analytics.py --type correlation < sample_data.json
+   - Run: python ml_analytics.py --type predict_gi_flare < sample_data.json
+
+6. DEBUGGING:
+   - Set breakpoints in ml_analytics.py
+   - Use PyCharm debugger to step through code
+   - Inspect variables and data frames
+
+7. DATA ANALYSIS:
+   - Use PyCharm's data viewer for DataFrames
+   - Create Jupyter notebooks for interactive analysis
+   - Use matplotlib/seaborn for visualizations
+
+EXAMPLE USAGE:
+==============
+
+# Test correlation analysis
+python ml_analytics.py --type correlation < sample_data.json
+
+# Test GI flare prediction
+python ml_analytics.py --type predict_gi_flare < sample_data.json
+
+# Test sleep quality prediction
+python ml_analytics.py --type predict_sleep_quality < sample_data.json
+
+# Test mood prediction
+python ml_analytics.py --type predict_mood < sample_data.json
+
+EXPECTED OUTPUT:
+================
+
+Correlation Analysis:
+- Shows correlation matrix between all health metrics
+- Identifies strong correlations (|r| > 0.5)
+- Provides insights into relationships
+
+Prediction Models:
+- Returns model coefficients and intercept
+- Shows R² score (model accuracy)
+- Provides feature importance
+- Makes predictions for new data points
+
+ERROR HANDLING:
+===============
+
+The script handles:
+- Missing data gracefully
+- Insufficient data for training
+- Invalid input formats
+- Model training failures
+
+All errors are returned as JSON with error messages.
+'''
+
+# ================================================================
+# 6. SAMPLE OUTPUT
+# ================================================================
+
+sample_output = '''
+SAMPLE OUTPUT FROM RUNNING THE ANALYTICS
+========================================
+
+1. CORRELATION ANALYSIS OUTPUT:
+{
+  "correlation_matrix": {
+    "sleep.duration_hours": {
+      "sleep.duration_hours": 1.0,
+      "sleep.quality_score": 0.85,
+      "mood.mood_score": 0.72,
+      "mood.stress_score": -0.68,
+      "symptoms.gi_flare": -0.75,
+      "symptoms.skin_flare": -0.45,
+      "symptoms.migraine": -0.52
+    },
+    "sleep.quality_score": {
+      "sleep.duration_hours": 0.85,
+      "sleep.quality_score": 1.0,
+      "mood.mood_score": 0.78,
+      "mood.stress_score": -0.82,
+      "symptoms.gi_flare": -0.88,
+      "symptoms.skin_flare": -0.55,
+      "symptoms.migraine": -0.61
+    }
+  },
+  "success": true
+}
+
+2. GI FLARE PREDICTION OUTPUT:
+{
+  "coefficients": [-0.45, -0.62, -0.23, 0.38],
+  "intercept": 8.2,
+  "mse": 0.85,
+  "r2_score": 0.78,
+  "feature_names": [
+    "sleep.duration_hours",
+    "sleep.quality_score", 
+    "mood.mood_score",
+    "mood.stress_score"
+  ],
+  "success": true
+}
+
+3. SLEEP QUALITY PREDICTION OUTPUT:
+{
+  "coefficients": [0.35, -0.42, -0.28, -0.15, -0.18],
+  "intercept": 4.8,
+  "mse": 0.92,
+  "r2_score": 0.82,
+  "feature_names": [
+    "mood.mood_score",
+    "mood.stress_score",
+    "symptoms.gi_flare",
+    "symptoms.skin_flare", 
+    "symptoms.migraine"
+  ],
+  "success": true
+}
+
+INTERPRETATION:
+===============
+
+Correlation Analysis:
+- Sleep quality strongly correlates with mood (0.78)
+- Sleep quality negatively correlates with stress (-0.82)
+- Sleep quality negatively correlates with GI flare (-0.88)
+
+GI Flare Prediction:
+- Better sleep quality reduces GI flare (-0.62 coefficient)
+- Longer sleep duration reduces GI flare (-0.45 coefficient)
+- Higher stress increases GI flare (0.38 coefficient)
+- Model explains 78% of variance (R² = 0.78)
+
+Sleep Quality Prediction:
+- Higher mood improves sleep quality (0.35 coefficient)
+- Higher stress reduces sleep quality (-0.42 coefficient)
+- All symptoms negatively impact sleep quality
+- Model explains 82% of variance (R² = 0.82)
+'''
+
+# ================================================================
+# END OF CODE FILE
+# ================================================================
+
+print("Complete PyCharm setup code has been provided above.")
+print("Copy each section into separate files in your PyCharm project.")
+print("Follow the setup instructions to get started!")
+

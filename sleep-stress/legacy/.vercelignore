@@ -1,0 +1,51 @@
+# Vercel ignore file
+# Files that shouldn't be deployed to Vercel
+
+# Development files
+.env.local
+.env.development
+.env.test
+
+# Build artifacts (handled by Vercel)
+.next
+out
+dist
+build
+
+# Dependencies (installed by Vercel)
+node_modules
+
+# IDE files
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage
+.nyc_output
+
+# Documentation (optional - remove if you want docs deployed)
+docs/
+*.md
+!README.md
+
+# Scripts (not needed in production)
+scripts/
+
+# ML files (if not needed in production)
+ml/
+
+# Server source (if using Next.js API routes instead)
+server_source/
+
