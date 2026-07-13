@@ -1,6 +1,6 @@
 # MindMap+ ML — Session Handoff
 
-_Last updated: 2026-06-17 · `main` @ `ace7059` · working tree clean · 173 `ml/` tests passing, ruff + mypy clean._
+_Last updated: 2026-07-13 · branch `claude/mindmap-next-steps-b11jw0` · 194 `ml/` tests passing, ruff + mypy clean._
 
 This doc orients a fresh session. There are **two independent ML workstreams** in `ml/`.
 Read this, then the canonical specs it points to.
@@ -51,6 +51,9 @@ Turns free-form user text (journal/brainstorm/notes) into a **verified concept g
 | orchestrator | `graph/pipeline.py` | `run_pipeline(text, user_id=...) -> MindmapArtifact` (Stage 1→2→3). Everything injectable → runs offline/deterministic. |
 | schema | `graph/schema.py` | RawDocument, TextSpan, Node, Edge, CandidateGraph, Confidence, VerifierDecision, MindmapArtifact. |
 | eval | `graph/gold.py` + `graph/evaluate.py` | Hand-authored 16-claim gold/challenge set + harness measuring TA/**false-accept**/FR/TR, P/R/F1, per-category, Brier/ECE. CLI: `uv run python -m mindmap_ml.graph.evaluate`. |
+| Obsidian adapter | `graph/obsidian.py` | Pre-Stage-1: Obsidian markdown (frontmatter/wikilinks/tags/callouts/fences) → clean prose + metadata. Cleaned text becomes `raw_text`, so offset integrity holds unchanged. `load_vault()` reads a whole vault. |
+| persistence | `serving/graph_batch.py` + migration **021** (`mindmap_graphs`, **applied to prod**) | Batch runs the pipeline per journal entry (`mindmap_journal_entries.content`) or per vault note (`--vault PATH --user-id UID`), upserts artifacts + cited evidence quotes. Idempotent on (user_id, doc_id, pipeline_version); doc_id is a content hash. `--llm` enables the Anthropic extractor. Daily cron: `.github/workflows/ml-graph-cron.yml` (inert until repo secrets set, same as summary cron). |
+| app surface | `frontend/app/(app)/mindmap/` | Read-only Mindmap view (nav → More → Mindmap): verified nodes grouped by type w/ confidence buckets, edges w/ evidence quotes, suppressed-claim count, abstain state. RLS: user-own + provider `read_reports`. |
 
 Tests: `tests/test_graph_{ingest,generate,verify,pipeline,evaluate}.py`. They prove **agreement ≠ validation** (a 0.99-confidence hallucination is suppressed), fail-closed causal/contradiction/provenance handling, and end-to-end provenance traceability.
 
@@ -69,11 +72,12 @@ false-accepts:      metaphor + sarcasm   ← shallow grounding's limit (the targ
 4. Everything **injectable** (LLM client, entailment grounder) so tests run with no key/network.
 
 ### Remaining work (prioritized) — this is where to continue
-1. **Wire a real grounder in prod.** `LLMEntailment` exists but needs a real client (Anthropic, lazy — mirror `narrative/compose.py`'s `AnthropicClient`); or a cross-encoder NLI (DeBERTa-MNLI — heavier, needs torch). Acceptance: figurative false-accepts (metaphor + sarcasm) drop in `graph/evaluate` while recall stays high.
-2. **Expand the gold set** to ~200 dual-annotated real entries (the mandatory human spend). Release gate = **false-accept ≤ target**, graph-validity = 100%, provenance-completeness = 100% for `directly_supported`, ECE ≤ target. Add edge-level gold (current gold is node-level).
-3. **Retrieval-evidence scorer** for psychological/causal claims — reuse `evidence/` (index + curated priors) so such claims must map to a prior or be down-ranked.
-4. **Trained calibrator** (isotonic/Platt on gold; reuse `eval/metrics.py` ECE/Brier) to replace the rule_v0 calibrator.
-5. **Persistence + app surface** (the "make it reach users" step, deferred as the larger/riskier option): new Supabase migration (`mindmap_graphs` table, RLS user-own + provider read, mirroring migration 020) + a `serving/` writer + a read-only "Mindmap" view in `frontend/app/(app)/`. This involves a prod migration + TS + deploy.
+1. ~~Wire a real grounder in prod~~ **DONE** (`AnthropicGrounder` + `make_entailment`, env-gated on `ANTHROPIC_API_KEY`).
+2. ~~Persistence + app surface~~ **DONE** (migration 021 applied to prod · `serving/graph_batch.py` · `frontend/app/(app)/mindmap/` · daily cron workflow). To go live end-to-end: set repo Actions secrets (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, optionally `ANTHROPIC_API_KEY`) and let Vercel deploy the frontend from main.
+3. **Expand the gold set** to ~200 dual-annotated real entries (the mandatory human spend). Release gate = **false-accept ≤ target**, graph-validity = 100%, provenance-completeness = 100% for `directly_supported`, ECE ≤ target. Add edge-level gold (current gold is node-level).
+4. **Retrieval-evidence scorer** for psychological/causal claims — reuse `evidence/` (index + curated priors) so such claims must map to a prior or be down-ranked.
+5. **Trained calibrator** (isotonic/Platt on gold; reuse `eval/metrics.py` ECE/Brier) to replace the rule_v0 calibrator.
+6. **Obsidian sync ergonomics** — `graph_batch --vault` works on a local vault copy today; a future step is a small sync bridge (e.g. vault → Supabase storage → batch) so vault notes flow without a laptop in the loop.
 
 ---
 
