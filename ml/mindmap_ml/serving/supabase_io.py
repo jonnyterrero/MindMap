@@ -18,6 +18,9 @@ PREDICTIONS_TABLE = "mindmap_predictions"
 UPSERT_CONFLICT = "user_id,prediction_type,entry_date,model_version"
 SUMMARIES_TABLE = "mindmap_ml_summaries"
 SUMMARIES_CONFLICT = "user_id,period_end,model_version"
+JOURNAL_TABLE = "mindmap_journal_entries"
+GRAPHS_TABLE = "mindmap_graphs"
+GRAPHS_CONFLICT = "user_id,doc_id,pipeline_version"
 
 
 class PredictionSink(Protocol):
@@ -58,6 +61,28 @@ class SupabaseSink:
         if not rows:
             return 0
         self.client.table(PREDICTIONS_TABLE).upsert(rows, on_conflict=UPSERT_CONFLICT).execute()
+        return len(rows)
+
+
+def read_journal_entries(client: Any) -> list[dict[str, Any]]:
+    """Plaintext journal rows the graph pipeline digests. Rows already migrated
+    to encrypted bodies have empty ``content`` and are skipped by the batch."""
+    res = (
+        client.table(JOURNAL_TABLE)
+        .select("id,user_id,entry_date,title,content,created_at")
+        .execute()
+    )
+    return list(res.data or [])
+
+
+class SupabaseGraphsSink:
+    def __init__(self, client: Any) -> None:
+        self.client = client
+
+    def upsert(self, rows: list[dict[str, Any]]) -> int:
+        if not rows:
+            return 0
+        self.client.table(GRAPHS_TABLE).upsert(rows, on_conflict=GRAPHS_CONFLICT).execute()
         return len(rows)
 
 
