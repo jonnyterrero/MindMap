@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Brain, Home, CalendarCheck, ListChecks, Pill, BookOpen,
   BarChart3, Target, Heart, Lightbulb, MoreHorizontal,
-  Settings, LogOut, Activity, MessageCircle, FileText,
+  Settings, LogOut, Activity, MessageCircle, FileText, Network,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +30,7 @@ const primaryNav = [
 const moreNav = [
   { href: "/companion", label: "Companion", icon: MessageCircle },
   { href: "/insights", label: "Insights", icon: Lightbulb },
+  { href: "/mindmap", label: "Mindmap", icon: Network },
   { href: "/reports", label: "Reports", icon: FileText },
   { href: "/routines", label: "Routines", icon: ListChecks },
   { href: "/body-map", label: "Body map", icon: Activity },
