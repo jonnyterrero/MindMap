@@ -7,8 +7,13 @@ import type { AppThemeId } from "@/lib/themes";
 
 /**
  * Authenticated app shell: responsive navigation (top glass nav on desktop,
- * bottom dock on mobile), themed background, and the active color theme.
- * Adds bottom padding on mobile so content clears the floating dock.
+ * bottom dock on mobile) and the active color theme.
+ *
+ * The themed gradient is painted by <body> (globals.css) off the <html>
+ * data-app-theme attribute, so the shell deliberately renders no background
+ * element of its own — a wrapper would double-paint the translucent gradient.
+ *
+ * `pb-28` keeps content clear of the floating dock on mobile.
  */
 export function AppShell({
   user,
@@ -21,8 +26,15 @@ export function AppShell({
 }) {
   return (
     <AppThemeProvider initialTheme={initialTheme}>
+      <a href="#main-content" className="skip-link">
+        Skip to content
+      </a>
       <AppHeader user={user} />
-      <main className="container mx-auto max-w-5xl px-4 py-6 pb-28 md:pb-8 safe-area-bottom">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="container mx-auto max-w-5xl px-4 py-6 pb-28 md:pb-8 safe-area-bottom"
+      >
         {children}
       </main>
       <BottomNav />

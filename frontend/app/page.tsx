@@ -126,7 +126,14 @@ export default async function LandingPage() {
   const signedIn = Boolean(user);
 
   return (
-    <div data-app-theme="aurora" className="app-bg min-h-screen">
+    // No theme attribute or background here: <html> carries data-app-theme and
+    // <body> paints the gradient. Re-declaring either would double-paint the
+    // translucent gradient and pin signed-in visitors to the default palette.
+    <div className="min-h-screen">
+      <a href="#main-content" className="skip-link">
+        Skip to content
+      </a>
+
       {/* Public top nav */}
       <header className="sticky top-0 z-40 glass-dock">
         <div className="container mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
@@ -166,7 +173,7 @@ export default async function LandingPage() {
         </div>
       </header>
 
-      <main>
+      <main id="main-content" tabIndex={-1}>
         <LandingHero signedIn={signedIn} />
 
         {/* Trust strip */}
