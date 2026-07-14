@@ -34,8 +34,11 @@ MindMap is a comprehensive mental health Progressive Web App (PWA) built with Ne
 - **UI:** Tailwind CSS, shadcn/ui, Radix UI primitives, Lucide icons
 - **Charts & Visualization:** Recharts, Embla Carousel
 - **State & Forms:** React Hook Form, Zod, custom hooks
+- **Database:** Supabase (PostgreSQL) with tracked schema migrations
 - **Utilities:** date-fns, class-variance-authority, clsx
 - **PWA Support:** Service worker, web manifest, install prompts
+- **Analytics:** @vercel/analytics
+- **Deployment:** Vercel
 
 ## Getting Started
 
@@ -64,8 +67,8 @@ Then open your browser at `http://localhost:3000`.
 ### Production Build
 
 ```bash
-pnpm install
-pnpm dev
+pnpm build
+pnpm start
 ```
 
 ## Available Scripts
@@ -117,16 +120,16 @@ Analytics are captured automatically via `@vercel/analytics` from `app/layout.ts
 
 ## Contributing
 
-1. Fork the repository.
-2. Create a feature branch: `git checkout -b feature/your-feature`.
-3. Commit your changes: `git commit -m "Add your feature"`.
-4. Push to your fork and open a pull request referencing any related issues.
+Contributions, bug reports, and feature requests are always welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for full guidelines.
 
-Bug reports, feature requests, and pull requests are always welcome.
+1. Fork the repository.
+2. Create a feature branch: `git checkout -b feature/your-feature`
+3. Commit your changes: `git commit -m "Add your feature"`
+4. Push to your fork and open a pull request referencing any related issues.
 
 ## License
 
-This project is released under the MIT License. See the `LICENSE` file (or header comments where applicable) for details.
+This project is released under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ---
 

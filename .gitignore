@@ -18,6 +18,29 @@ yarn-error.log*
 
 # env files
 .env*
+!.env.example
+!frontend/.env.example
+
+# secrets
+*.pem
+*.key
+secrets/
+config/secrets.*
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
+# Dependencies
+.venv/
+venv/
+
+# Logs
+*.log
+logs/
 
 # vercel
 .vercel

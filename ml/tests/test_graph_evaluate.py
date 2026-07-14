@@ -12,7 +12,13 @@ import json
 from mindmap_ml.graph.evaluate import evaluate
 from mindmap_ml.graph.ingest import digest
 from mindmap_ml.graph.schema import CandidateGraph, Node
-from mindmap_ml.graph.verify import LLMEntailment, verify_graph
+from mindmap_ml.graph.verify import (
+    AnthropicGrounder,
+    LexicalEntailment,
+    LLMEntailment,
+    make_entailment,
+    verify_graph,
+)
 
 
 # --------------------------- eval harness (lexical) ------------------------- #
@@ -88,3 +94,30 @@ def test_llm_grounder_plugs_into_verifier() -> None:
     art2 = verify_graph(doc, spans, CandidateGraph(doc.doc_id, [Node("n1", "stressful workload", "theme", evidence=[spans[0].span_id])], []),
                         entailment=LLMEntailment(FakeJSON('{"label":"neutral","score":0.1}')))
     assert art2.nodes == []
+
+
+# -------------------- make_entailment factory + AnthropicGrounder ----------- #
+def test_make_entailment_returns_lexical_without_key(monkeypatch) -> None:
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    ent = make_entailment(prefer_llm=True)
+    assert isinstance(ent, LexicalEntailment)
+
+
+def test_make_entailment_returns_llm_with_key(monkeypatch) -> None:
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test-fake")
+    ent = make_entailment(prefer_llm=True)
+    assert isinstance(ent, LLMEntailment)
+    assert ent.version.startswith("llm_adversarial_v0")
+
+
+def test_make_entailment_respects_prefer_llm_false(monkeypatch) -> None:
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test-fake")
+    ent = make_entailment(prefer_llm=False)
+    assert isinstance(ent, LexicalEntailment)
+
+
+def test_anthropic_grounder_version_string() -> None:
+    g = AnthropicGrounder()
+    assert g.model == "claude-sonnet-4-6"
+    g2 = AnthropicGrounder(model="claude-haiku-4-5-20251001")
+    assert g2.model == "claude-haiku-4-5-20251001"

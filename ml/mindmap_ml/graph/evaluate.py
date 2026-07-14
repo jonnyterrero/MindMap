@@ -25,7 +25,7 @@ from ..eval.metrics import brier_score, expected_calibration_error
 from .gold import GOLD_CASES, GoldCase
 from .ingest import digest
 from .schema import CandidateGraph, Node
-from .verify import Entailment, LexicalEntailment, verify_graph
+from .verify import Entailment, LexicalEntailment, make_entailment, verify_graph
 
 
 def _find_span_id(spans: list, contains: str | None) -> list[str]:
@@ -147,7 +147,19 @@ def format_report(r: VerifierEvalReport) -> str:
 
 
 def main() -> None:
-    print(format_report(evaluate()))
+    import sys
+
+    use_llm = "--llm" in sys.argv
+
+    if use_llm:
+        ent = make_entailment(prefer_llm=True)
+        if not ent.version.startswith("llm"):
+            print("ANTHROPIC_API_KEY not set — cannot run with --llm.", file=sys.stderr)
+            sys.exit(1)
+    else:
+        ent = LexicalEntailment()
+
+    print(format_report(evaluate(entailment=ent)))
 
 
 if __name__ == "__main__":
