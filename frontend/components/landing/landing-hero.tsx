@@ -1,8 +1,32 @@
 import Link from "next/link";
 import { GlassButton, GlassPanel } from "@/components/glass";
-import { ArrowRight, Moon, Activity, BookOpen, TrendingUp } from "lucide-react";
+import {
+  ArrowRight,
+  Moon,
+  Activity,
+  BookOpen,
+  TrendingUp,
+} from "lucide-react";
 
-export function LandingHero() {
+const SIGNALS = [
+  "Mood",
+  "Sleep",
+  "Focus",
+  "Routines",
+  "Medication",
+  "Journaling",
+  "Therapy",
+  "Symptoms",
+  "Wearables",
+  "Environment",
+];
+
+/**
+ * Landing hero. CTAs adapt to auth state:
+ *  - signed out → Create account / See how it works
+ *  - signed in  → Continue where you left off / Go to today's check-in
+ */
+export function LandingHero({ signedIn }: { signedIn: boolean }) {
   return (
     <section className="relative overflow-hidden">
       {/* Soft gradient accent behind the hero (never behind body text). */}
@@ -17,30 +41,68 @@ export function LandingHero() {
             Calm, private self-tracking
           </span>
           <h1 className="text-balance text-4xl font-bold leading-tight tracking-tight sm:text-5xl font-[family-name:var(--font-space-grotesk)]">
-            Track your mental health patterns with clarity.
+            {signedIn
+              ? "Welcome back. Pick up where you left off."
+              : "Notice your patterns in mood, sleep, and migraines."}
           </h1>
           <p className="text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">
-            MindMap helps you connect mood, sleep, routines, medication,
-            journaling, therapy, and symptoms over time — so your patterns
-            become easier to understand.
+            MindMap is a private space to log mood, sleep, focus, routines,
+            medication, journaling, therapy, symptoms, wearable data, and
+            environmental signals — so possible patterns become easier to
+            notice over time.
           </p>
+
+          {/* Signal chips */}
+          <ul className="flex flex-wrap gap-2" aria-label="What you can track">
+            {SIGNALS.map((s) => (
+              <li
+                key={s}
+                className="rounded-full border border-white/40 bg-white/45 px-2.5 py-1 text-xs font-medium text-muted-foreground backdrop-blur-xl"
+              >
+                {s}
+              </li>
+            ))}
+          </ul>
+
           <div className="flex flex-col gap-3 sm:flex-row">
-            <GlassButton asChild glow>
-              <Link href="/signup">
-                Get Started
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </Link>
-            </GlassButton>
-            <GlassButton asChild>
-              <Link href="#how">See How It Works</Link>
-            </GlassButton>
+            {signedIn ? (
+              <>
+                <GlassButton asChild glow>
+                  <Link href="/home">
+                    Continue where you left off
+                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                  </Link>
+                </GlassButton>
+                <GlassButton asChild>
+                  <Link href="/today">Go to today&apos;s check-in</Link>
+                </GlassButton>
+              </>
+            ) : (
+              <>
+                <GlassButton asChild glow>
+                  <Link href="/signup">
+                    Create account
+                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                  </Link>
+                </GlassButton>
+                <GlassButton asChild>
+                  <Link href="#how">See how it works</Link>
+                </GlassButton>
+              </>
+            )}
           </div>
-          <p className="text-xs text-muted-foreground">
-            Already have an account?{" "}
-            <Link href="/login" className="font-medium text-primary hover:underline">
-              Sign in
-            </Link>
-          </p>
+
+          {!signedIn && (
+            <p className="text-xs text-muted-foreground">
+              Already have an account?{" "}
+              <Link
+                href="/login"
+                className="font-medium text-primary hover:underline"
+              >
+                Sign in
+              </Link>
+            </p>
+          )}
         </div>
 
         {/* Liquid-glass app preview mockup */}
@@ -56,13 +118,18 @@ export function LandingHero() {
             <div className="mt-4 grid grid-cols-2 gap-3">
               <PreviewStat icon={TrendingUp} label="Mood" value="Steady" />
               <PreviewStat icon={Moon} label="Sleep" value="7h 20m" />
-              <PreviewStat icon={Activity} label="Anxiety" value="Low" />
+              <PreviewStat icon={Activity} label="Migraine" value="None" />
               <PreviewStat icon={BookOpen} label="Journal" value="2 notes" />
             </div>
 
             <GlassPanel className="mt-4 p-4">
-              <p className="text-xs font-medium text-muted-foreground">7-day mood trend</p>
-              <div className="mt-3 flex h-16 items-end gap-1.5" aria-hidden="true">
+              <p className="text-xs font-medium text-muted-foreground">
+                7-day mood trend
+              </p>
+              <div
+                className="mt-3 flex h-16 items-end gap-1.5"
+                aria-hidden="true"
+              >
                 {[40, 55, 48, 70, 62, 80, 72].map((h, i) => (
                   <span
                     key={i}

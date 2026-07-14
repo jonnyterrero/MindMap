@@ -10,8 +10,10 @@ const PUBLIC_ROUTES = [
   "/privacy",
   "/terms",
   "/medical-disclaimer",
+  "/ai-disclosure",
   "/data-deletion",
   "/support",
+  "/crisis-resources",
 ];
 
 // API routes that should return 401 JSON (not redirect to login page)
@@ -20,9 +22,10 @@ const API_PREFIX = "/api/";
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 1. The marketing landing page ("/") is public. The page itself redirects
-  //    authenticated users to /home, so handle it as an exact match here
-  //    (a startsWith check would match every route).
+  // 1. The marketing landing page ("/") is public and is shown to every
+  //    visitor, including signed-in users (the page itself adapts its CTAs
+  //    based on auth state). Handle it as an exact match here because a
+  //    startsWith check would match every route.
   if (pathname === "/") {
     return NextResponse.next();
   }
