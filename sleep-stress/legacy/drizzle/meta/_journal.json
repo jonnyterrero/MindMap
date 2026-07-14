@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1759194335883,
+      "tag": "0000_redundant_ogun",
+      "breakpoints": true
+    }
+  ]
+}
