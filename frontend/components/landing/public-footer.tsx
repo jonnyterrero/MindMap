@@ -32,13 +32,13 @@ export function PublicFooter() {
 
           <nav
             aria-label="Legal and support"
-            className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm text-muted-foreground sm:grid-cols-2"
+            className="grid grid-cols-2 gap-x-8 text-sm text-muted-foreground sm:grid-cols-2"
           >
             {LEGAL_LINKS.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className="hover:text-foreground"
+                className="inline-flex min-h-11 items-center hover:text-foreground"
               >
                 {item.label}
               </Link>
@@ -52,10 +52,16 @@ export function PublicFooter() {
             medical advice.
           </p>
           <div className="flex gap-4 text-xs text-muted-foreground">
-            <Link href="/login" className="hover:text-foreground">
+            <Link
+              href="/login"
+              className="inline-flex min-h-11 items-center hover:text-foreground"
+            >
               Sign in
             </Link>
-            <Link href="/signup" className="hover:text-foreground">
+            <Link
+              href="/signup"
+              className="inline-flex min-h-11 items-center hover:text-foreground"
+            >
               Create account
             </Link>
           </div>

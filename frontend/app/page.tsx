@@ -141,11 +141,11 @@ export default async function LandingPage() {
               <>
                 <Link
                   href="/today"
-                  className="rounded-full px-3 py-1.5 text-sm font-medium text-foreground hover:text-primary"
+                  className="hidden min-h-11 items-center rounded-full px-3 text-sm font-medium text-foreground hover:text-primary sm:inline-flex"
                 >
                   Today&apos;s check-in
                 </Link>
-                <GlassButton asChild glow className="px-4 py-2">
+                <GlassButton asChild glow className="min-h-11 px-4">
                   <Link href="/home">Continue</Link>
                 </GlassButton>
               </>
@@ -153,11 +153,11 @@ export default async function LandingPage() {
               <>
                 <Link
                   href="/login"
-                  className="rounded-full px-3 py-1.5 text-sm font-medium text-foreground hover:text-primary"
+                  className="inline-flex min-h-11 items-center rounded-full px-3 text-sm font-medium text-foreground hover:text-primary"
                 >
                   Sign in
                 </Link>
-                <GlassButton asChild glow className="px-4 py-2">
+                <GlassButton asChild glow className="min-h-11 px-4">
                   <Link href="/signup">Create account</Link>
                 </GlassButton>
               </>
