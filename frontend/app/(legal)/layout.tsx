@@ -5,8 +5,10 @@ const NAV = [
   { href: "/privacy", label: "Privacy" },
   { href: "/terms", label: "Terms" },
   { href: "/medical-disclaimer", label: "Disclaimer" },
+  { href: "/ai-disclosure", label: "AI / ML" },
   { href: "/data-deletion", label: "Data Deletion" },
   { href: "/support", label: "Support" },
+  { href: "/crisis-resources", label: "Crisis" },
 ];
 
 export default function LegalLayout({

@@ -10,20 +10,26 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: rgba(255, 255, 255, 0.6);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.8 0.15 310); /* light purple #D8B4FE */
-  --primary-foreground: oklch(0.145 0 0);
+  /* Accent tokens are tuned so that --primary clears WCAG AA (>= 4.5:1) BOTH
+     as a fill behind --primary-foreground and as a text/icon color on the
+     light glass surfaces. Pastel accents read as "washed out" and failed AA
+     badly (the old #D8B4FE scored 2.33:1 as text), so the accent is deeper
+     while the soft character stays in the background gradients. */
+  --primary: oklch(0.555 0.16 305);
+  --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.75 0.2 330); /* light pink #F472B6 */
   --secondary-foreground: oklch(0.145 0 0);
   --muted: oklch(0.97 0.01 240);
-  --muted-foreground: oklch(0.556 0 0);
+  --muted-foreground: oklch(0.535 0 0);
   --accent: oklch(0.8 0.15 310);
   --accent-foreground: oklch(0.145 0 0);
   --destructive: oklch(0.7 0.2 15);
   --destructive-foreground: oklch(0.985 0 0);
   --border: rgba(0, 0, 0, 0.1);
   --input: rgba(255, 255, 255, 0.7);
-  --ring: rgba(216, 180, 254, 0.3);
-  --chart-1: oklch(0.8 0.15 310);
+  /* Solid (not low-alpha) so the focus indicator itself clears 3:1. */
+  --ring: oklch(0.555 0.16 305);
+  --chart-1: oklch(0.555 0.16 305);
   --chart-2: oklch(0.75 0.2 330);
   --chart-3: oklch(0.97 0.01 240);
   --chart-4: oklch(0.922 0.01 240);
@@ -121,17 +127,143 @@
   }
   body {
     @apply bg-background text-foreground;
-    background: linear-gradient(
-      135deg,
-      rgba(244, 114, 182, 0.1) 0%,
-      rgba(216, 180, 254, 0.15) 25%,
-      rgba(255, 255, 255, 0.1) 50%,
-      rgba(216, 180, 254, 0.15) 75%,
-      rgba(244, 114, 182, 0.1) 100%
-    );
+    background: var(--app-bg-gradient);
     background-attachment: fixed;
     min-height: 100vh;
   }
+}
+
+/* ============================================================
+   App color themes ("color moods")
+   Selected in Settings → Appearance. The active theme id is applied as
+   `data-app-theme="<id>"` on <html> — by the no-flash script in the root
+   layout on first paint, then by AppThemeProvider on change. It MUST live on
+   <html> and not on a wrapper div: Radix renders dialogs, dropdowns, selects,
+   popovers and sheets into a portal on <body>, so a div-scoped attribute would
+   leave every modal on the default palette, and <body>'s gradient would never
+   change either. See lib/themes.ts.
+
+   Each --primary below is tuned to clear WCAG AA (>= 4.5:1) as both a fill
+   (behind --primary-foreground) and as a text/icon color on the glass surface.
+   ============================================================ */
+:root {
+  --app-bg-gradient: linear-gradient(
+    135deg,
+    rgba(244, 114, 182, 0.1) 0%,
+    rgba(216, 180, 254, 0.15) 25%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(216, 180, 254, 0.15) 75%,
+    rgba(244, 114, 182, 0.1) 100%
+  );
+}
+
+[data-app-theme="aurora"] {
+  --primary: oklch(0.555 0.16 305);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.75 0.18 350);
+  --secondary-foreground: oklch(0.16 0 0);
+  --accent: oklch(0.78 0.12 270);
+  --accent-foreground: oklch(0.16 0 0);
+  --ring: oklch(0.555 0.16 305);
+  --chart-1: oklch(0.555 0.16 305);
+  --chart-2: oklch(0.75 0.18 350);
+  --app-bg-gradient: linear-gradient(
+    135deg,
+    rgba(244, 114, 182, 0.12) 0%,
+    rgba(196, 160, 254, 0.16) 35%,
+    rgba(125, 211, 252, 0.12) 70%,
+    rgba(244, 114, 182, 0.1) 100%
+  );
+}
+
+[data-app-theme="ocean"] {
+  --primary: oklch(0.525 0.14 235);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.78 0.11 200);
+  --secondary-foreground: oklch(0.16 0 0);
+  --accent: oklch(0.75 0.12 195);
+  --accent-foreground: oklch(0.16 0 0);
+  --ring: oklch(0.525 0.14 235);
+  --chart-1: oklch(0.525 0.14 235);
+  --chart-2: oklch(0.75 0.12 195);
+  --app-bg-gradient: linear-gradient(
+    135deg,
+    rgba(34, 211, 238, 0.12) 0%,
+    rgba(59, 130, 246, 0.15) 45%,
+    rgba(45, 212, 191, 0.12) 100%
+  );
+}
+
+[data-app-theme="lavender"] {
+  --primary: oklch(0.55 0.16 295);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.78 0.1 300);
+  --secondary-foreground: oklch(0.16 0 0);
+  --accent: oklch(0.72 0.12 285);
+  --accent-foreground: oklch(0.16 0 0);
+  --ring: oklch(0.55 0.16 295);
+  --chart-1: oklch(0.55 0.16 295);
+  --chart-2: oklch(0.72 0.12 285);
+  --app-bg-gradient: linear-gradient(
+    135deg,
+    rgba(196, 181, 253, 0.16) 0%,
+    rgba(167, 139, 250, 0.16) 50%,
+    rgba(129, 140, 248, 0.13) 100%
+  );
+}
+
+[data-app-theme="rose"] {
+  --primary: oklch(0.56 0.19 15);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.78 0.15 30);
+  --secondary-foreground: oklch(0.16 0 0);
+  --accent: oklch(0.78 0.13 45);
+  --accent-foreground: oklch(0.16 0 0);
+  --ring: oklch(0.56 0.19 15);
+  --chart-1: oklch(0.56 0.19 15);
+  --chart-2: oklch(0.78 0.13 45);
+  --app-bg-gradient: linear-gradient(
+    135deg,
+    rgba(253, 164, 175, 0.15) 0%,
+    rgba(244, 114, 182, 0.15) 50%,
+    rgba(253, 186, 116, 0.13) 100%
+  );
+}
+
+[data-app-theme="graphite"] {
+  --primary: oklch(0.45 0.02 260);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.7 0.02 260);
+  --secondary-foreground: oklch(0.16 0 0);
+  --accent: oklch(0.55 0.02 260);
+  --accent-foreground: oklch(0.98 0 0);
+  --ring: oklch(0.45 0.02 260);
+  --chart-1: oklch(0.45 0.02 260);
+  --chart-2: oklch(0.62 0.02 260);
+  --app-bg-gradient: linear-gradient(
+    135deg,
+    rgba(100, 116, 139, 0.12) 0%,
+    rgba(51, 65, 85, 0.14) 50%,
+    rgba(82, 82, 91, 0.12) 100%
+  );
+}
+
+[data-app-theme="forest"] {
+  --primary: oklch(0.515 0.13 162);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.8 0.1 165);
+  --secondary-foreground: oklch(0.16 0 0);
+  --accent: oklch(0.7 0.11 180);
+  --accent-foreground: oklch(0.16 0 0);
+  --ring: oklch(0.515 0.13 162);
+  --chart-1: oklch(0.515 0.13 162);
+  --chart-2: oklch(0.7 0.11 180);
+  --app-bg-gradient: linear-gradient(
+    135deg,
+    rgba(110, 231, 183, 0.14) 0%,
+    rgba(20, 184, 166, 0.15) 50%,
+    rgba(21, 128, 61, 0.12) 100%
+  );
 }
 
 @layer utilities {
@@ -149,6 +281,26 @@
 
   .glass-dark {
     @apply backdrop-blur-md bg-black/20 border border-white/10 shadow-lg;
+  }
+
+  /* Liquid-glass surfaces used by the design-system primitives. */
+  .glass-panel {
+    @apply backdrop-blur-xl bg-white/55 border border-white/30 shadow-sm;
+    box-shadow:
+      0 1px 0 0 rgba(255, 255, 255, 0.5) inset,
+      0 8px 24px -12px rgba(15, 23, 42, 0.18);
+  }
+
+  .glass-dock {
+    @apply backdrop-blur-xl bg-white/55 border border-white/40;
+    box-shadow:
+      0 1px 0 0 rgba(255, 255, 255, 0.6) inset,
+      0 12px 32px -10px rgba(15, 23, 42, 0.28);
+  }
+
+  .app-bg {
+    background: var(--app-bg-gradient);
+    background-attachment: fixed;
   }
 
   .animate-float {
@@ -211,4 +363,98 @@
 body {
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
+}
+
+/* ============================================================
+   Skip link — first focusable element on the page, visually hidden
+   until focused. Keyboard users can jump past the nav to the content.
+   ============================================================ */
+.skip-link {
+  position: absolute;
+  left: 0.75rem;
+  top: 0.75rem;
+  z-index: 100;
+  transform: translateY(-200%);
+  border-radius: 9999px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: transform 150ms ease;
+}
+.skip-link:focus-visible {
+  transform: translateY(0);
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* ============================================================
+   Reduced motion. This is a mental-health app whose UI leans on blur,
+   float/pulse/shimmer loops, and scale transitions — exactly the things
+   that trigger vestibular symptoms and migraine aura. Honour the OS
+   setting: hold animations to a single frame and drop transitions.
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .animate-float,
+  .animate-pulse-slow,
+  .animate-shimmer {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
+/* ============================================================
+   Increased contrast: translucent glass over a gradient is the first
+   thing to fail for low-vision users. Make the surfaces opaque and give
+   them a real border.
+   ============================================================ */
+@media (prefers-contrast: more) {
+  .glass,
+  .glass-card,
+  .glass-strong,
+  .glass-panel,
+  .glass-dock {
+    background-color: #fff !important;
+    backdrop-filter: none !important;
+    border-color: var(--foreground) !important;
+  }
+
+  .app-bg,
+  body {
+    background-image: none !important;
+  }
+}
+
+/* Windows High Contrast / forced-colors: strip the decorative gradient and
+   blur entirely, and make focus indicators use the system highlight color. */
+@media (forced-colors: active) {
+  .glass,
+  .glass-card,
+  .glass-strong,
+  .glass-panel,
+  .glass-dock {
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+    border: 1px solid CanvasText !important;
+  }
+
+  .app-bg,
+  body {
+    background-image: none !important;
+  }
+
+  *:focus-visible {
+    outline: 3px solid Highlight !important;
+    outline-offset: 2px;
+  }
 }
