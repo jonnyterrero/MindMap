@@ -11,7 +11,7 @@ const LEGAL_LINKS = [
   { href: "/crisis-resources", label: "Crisis Resources" },
 ];
 
-export function PublicFooter() {
+export function PublicFooter({ signedIn = false }: { signedIn?: boolean }) {
   const year = new Date().getFullYear();
   return (
     <footer className="border-t border-white/20 py-10">
@@ -52,18 +52,29 @@ export function PublicFooter() {
             medical advice.
           </p>
           <div className="flex gap-4 text-xs text-muted-foreground">
-            <Link
-              href="/login"
-              className="inline-flex min-h-11 items-center hover:text-foreground"
-            >
-              Sign in
-            </Link>
-            <Link
-              href="/signup"
-              className="inline-flex min-h-11 items-center hover:text-foreground"
-            >
-              Create account
-            </Link>
+            {signedIn ? (
+              <Link
+                href="/home"
+                className="inline-flex min-h-11 items-center hover:text-foreground"
+              >
+                Open app
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="inline-flex min-h-11 items-center hover:text-foreground"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  href="/signup"
+                  className="inline-flex min-h-11 items-center hover:text-foreground"
+                >
+                  Create account
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>

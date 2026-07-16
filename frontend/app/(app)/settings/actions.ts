@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase-server";
 import { revalidatePath } from "next/cache";
 import { geocodeCity, fetchDailyWeather, fetchAirQuality } from "@/lib/weather";
+import { APP_THEME_IDS } from "@/lib/themes";
 
 export async function getProfile() {
   const supabase = await createClient();
@@ -36,11 +37,14 @@ export async function updateProfile(displayName: string, timezone: string) {
 
 /**
  * Persist the user's selected app color theme ("color mood").
- * Validated against the allowed set to satisfy the DB CHECK constraint.
+ * Validated against APP_THEME_IDS — the same allow-list the UI and the DB
+ * CHECK constraint (migration 021) derive from — so adding a theme in
+ * lib/themes.ts can't silently fail server-side validation.
  */
 export async function updateAppTheme(theme: string) {
-  const allowed = ["aurora", "ocean", "lavender", "rose", "graphite", "forest"];
-  if (!allowed.includes(theme)) return { error: "Unknown theme" };
+  if (!(APP_THEME_IDS as readonly string[]).includes(theme)) {
+    return { error: "Unknown theme" };
+  }
 
   const supabase = await createClient();
   const {

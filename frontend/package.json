@@ -90,6 +90,7 @@
     "@capacitor/ios": "^8.3.4",
     "@playwright/test": "^1.60.0",
     "@tailwindcss/postcss": "^4.1.9",
+    "@tailwindcss/typography": "^0.5.20",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
