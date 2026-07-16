@@ -1,0 +1,16 @@
+{
+  "method": "platt",
+  "params": {
+    "a": 1.210805,
+    "b": 1.055176
+  },
+  "version": "trained_v1:platt",
+  "n_points": 19,
+  "n_cases": 11,
+  "loo_brier": {
+    "identity": 0.1242,
+    "platt": 0.1069,
+    "isotonic": 0.117
+  },
+  "created_at": "2026-07-16T20:53:35.052653+00:00"
+}

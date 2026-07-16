@@ -24,7 +24,7 @@ from typing import Any
 from ..eval.metrics import brier_score, expected_calibration_error
 from .gold import GOLD_CASES, GoldCase
 from .ingest import digest
-from .schema import CandidateGraph, Node
+from .schema import CandidateGraph, Edge, Node
 from .verify import Entailment, LexicalEntailment, make_entailment, verify_graph
 
 
@@ -50,7 +50,19 @@ def _candidate_from_gold(doc, spans, case: GoldCase) -> CandidateGraph:
         )
         for i, c in enumerate(case.claims)
     ]
-    return CandidateGraph(doc_id=doc.doc_id, nodes=nodes, edges=[])
+    edges = [
+        Edge(
+            edge_id=f"ed_{doc.doc_id}_{j}",
+            src=f"nd_{doc.doc_id}_{e.src}",
+            dst=f"nd_{doc.doc_id}_{e.dst}",
+            edge_type=e.edge_type,
+            evidence=[sid for loc in e.evidence_contains for sid in _find_span_id(spans, loc)],
+            generator_confidence=0.9,
+            claim_class="directly_supported",
+        )
+        for j, e in enumerate(case.edges)
+    ]
+    return CandidateGraph(doc_id=doc.doc_id, nodes=nodes, edges=edges)
 
 
 @dataclass
@@ -91,27 +103,35 @@ def evaluate(
         doc, spans = digest(case.text, user_id="gold")
         art = verify_graph(doc, spans, _candidate_from_gold(doc, spans, case), entailment=ent)
         surfaced = {n.node_id: n for n in art.nodes}
+        surfaced_edges = {e.edge_id: e for e in art.edges}
+
+        # (claim_id, gold verdict, category, surfaced element or None)
+        scored: list[tuple[bool, str, object]] = []
         for i, claim in enumerate(case.claims):
             nid = f"nd_{doc.doc_id}_{i}"
-            is_surfaced = nid in surfaced
-            cat = per[claim.category]
-            if claim.supported and is_surfaced:
+            scored.append((claim.supported, claim.category, surfaced.get(nid)))
+        for j, gold_edge in enumerate(case.edges):
+            eid = f"ed_{doc.doc_id}_{j}"
+            scored.append((gold_edge.supported, gold_edge.category, surfaced_edges.get(eid)))
+
+        for supported, category, element in scored:
+            is_surfaced = element is not None
+            cat = per[category]
+            if supported and is_surfaced:
                 ta += 1
                 cat["ta"] += 1
-            elif (not claim.supported) and is_surfaced:
+            elif (not supported) and is_surfaced:
                 fa += 1
                 cat["fa"] += 1
-            elif claim.supported and not is_surfaced:
+            elif supported and not is_surfaced:
                 fr += 1
                 cat["fr"] += 1
             else:
                 tr += 1
                 cat["tr"] += 1
-            if is_surfaced:
-                node = surfaced[nid]
-                if node.confidence is not None:
-                    conf_scores.append(node.confidence.calibrated)
-                    conf_labels.append(1.0 if claim.supported else 0.0)
+            if element is not None and element.confidence is not None:
+                conf_scores.append(element.confidence.calibrated)
+                conf_labels.append(1.0 if supported else 0.0)
 
     precision = _safe_div(ta, ta + fa)
     recall = _safe_div(ta, ta + fr)
