@@ -17,3 +17,9 @@ reports/*.png
 # Local secrets
 .env
 .env.local
+
+# Exception: the graph calibrator is a reviewed model artifact fit on the
+# committed synthetic gold set (no user data) — prod needs it from a clean checkout.
+!mindmap_ml/graph/artifacts/
+mindmap_ml/graph/artifacts/*
+!mindmap_ml/graph/artifacts/graph_calibrator.json

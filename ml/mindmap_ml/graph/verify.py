@@ -9,9 +9,13 @@ independent evidence does. Components:
   (C) entailment grounder     — SEPARATE model (injectable; default = a conservative
                                 lexical placeholder. Replace with a cross-encoder NLI
                                 (DeBERTa-MNLI) or an adversarial LLM verifier.)
+  (C2) evidence gate          — clinical/diagnostic claims and cue-less causal
+                                edges must clear the curated-evidence scorer
+                                (evidence_scorer.py); demote/cap only, never promote
   (D) graph consistency       — dangling edges, contradictions (flag, never merge)
-  (E) calibrator              — rule-based confidence + final claim_class (trained
-                                calibrator is future; needs a gold set)
+  (E) calibrator              — rule-based confidence + final claim_class; a
+                                trained (LOO-gated) recalibration applies on top
+                                when graph/calibrate.py's artifact is present
 
 Decision per claim: accept | downgrade | abstain | reject. Unsupported-but-plausible
 structure does NOT pass; low-evidence is downgraded or omitted; schema/contradiction/
@@ -26,6 +30,8 @@ import re
 from datetime import UTC, datetime
 from typing import Protocol
 
+from .calibrate import active_calibrator
+from .evidence_scorer import SCORER_VERSION, clinical_gate, ground_causal, is_clinical
 from .schema import (
     CLAIM_CLASSES,
     EDGE_TYPES,
@@ -188,7 +194,17 @@ def _calibrate(final_class: str, score: float, *, causal_no_cue: bool = False) -
         cal = 0.35
     else:  # weakly_inferred
         cal = 0.4 + 0.2 * score
+    # A trained calibrator (fit on gold, LOO-gated; see graph/calibrate.py)
+    # monotonically recalibrates the rule output when its artifact is present.
+    trained = active_calibrator()
+    if trained is not None:
+        return Confidence.from_score(raw=score, calibrated=trained(cal), version=trained.version)
     return Confidence.from_score(raw=score, calibrated=cal)
+
+
+def _calibrator_version() -> str:
+    trained = active_calibrator()
+    return trained.version if trained is not None else "rule_v0"
 
 
 def _verify_node(node: Node, spans_by_id: dict[str, TextSpan], ent: Entailment) -> VerifierDecision:
@@ -215,17 +231,35 @@ def _verify_node(node: Node, spans_by_id: dict[str, TextSpan], ent: Entailment) 
     if label == "contradict":
         return VerifierDecision(node.node_id, "node", "reject", None, [*reasons, "nli_contradict"], comp, escalated=True)
 
+    would_surface = (has_span and label == "entail") or (score >= TAU_LOW and (has_span or inferred_ok))
+
+    # (C2) evidence gate for clinical/diagnostic claims: entailment alone is not
+    # enough — the cited text must NAME the condition (unhedged), and even then
+    # the claim is capped at weakly_inferred. A mindmap never asserts a diagnosis.
+    if would_surface and is_clinical(node.label):
+        gate = clinical_gate(node.label, premise)
+        comp["clinical_gate"] = {"allowed": gate.allowed, "reasons": gate.reasons, "citations": gate.citations}
+        if not gate.allowed:
+            return VerifierDecision(node.node_id, "node", "abstain", None, [*reasons, *gate.reasons], comp)
+        return VerifierDecision(node.node_id, "node", "downgrade", "weakly_inferred",
+                                [*reasons, *gate.reasons], comp, _calibrate("weakly_inferred", score))
+
     if has_span and label == "entail":
         return VerifierDecision(node.node_id, "node", "accept", "directly_supported", reasons, comp,
                                 _calibrate("directly_supported", score))
-    if score >= TAU_LOW and (has_span or inferred_ok):
+    if would_surface:
         return VerifierDecision(node.node_id, "node", "downgrade", "weakly_inferred",
                                 [*reasons, "insufficient_entailment"], comp, _calibrate("weakly_inferred", score))
     # too weak to surface (unsupported-but-plausible) -> omit, may revisit with more evidence
     return VerifierDecision(node.node_id, "node", "abstain", None, [*reasons, "insufficient_evidence"], comp)
 
 
-def _verify_edge(edge: Edge, spans_by_id: dict[str, TextSpan], live_nodes: set[str]) -> VerifierDecision:
+def _verify_edge(
+    edge: Edge,
+    spans_by_id: dict[str, TextSpan],
+    live_nodes: set[str],
+    labels_by_id: dict[str, str],
+) -> VerifierDecision:
     # (A) schema + (D) dangling
     if edge.edge_type not in EDGE_TYPES:
         return VerifierDecision(edge.edge_id, "edge", "reject", None, ["invalid_edge_type"])
@@ -242,8 +276,20 @@ def _verify_edge(edge: Edge, spans_by_id: dict[str, TextSpan], live_nodes: set[s
     premise = " ".join(sp.text for sp in cited)
     comp = {"provenance": has_span, "causal_cue": _has_causal_cue(premise) if edge.edge_type == "causal" else None}
 
-    # causal edges require explicit causal language to be 'directly_supported'
+    # Causal edges require explicit causal language to be 'directly_supported'.
+    # Without it, the inferred cause survives (as a cited hypothesis) only when
+    # the pair maps to a curated evidence prior — otherwise it is down-ranked
+    # out entirely (HANDOFF item #3: map to a prior or be down-ranked).
     if edge.edge_type == "causal" and not _has_causal_cue(premise):
+        grounding = ground_causal(labels_by_id.get(edge.src, ""), labels_by_id.get(edge.dst, ""))
+        comp["causal_prior"] = {
+            "grounded": grounding.grounded,
+            "matched": grounding.matched,
+            "citations": grounding.citations,
+        }
+        if not grounding.grounded:
+            return VerifierDecision(edge.edge_id, "edge", "abstain", None,
+                                    ["no_causal_language", "causal_ungrounded"], comp)
         return VerifierDecision(edge.edge_id, "edge", "downgrade", "weakly_inferred", ["no_causal_language"], comp,
                                 _calibrate("weakly_inferred", edge.generator_confidence, causal_no_cue=True))
     if has_span:
@@ -290,11 +336,12 @@ def verify_graph(
 
     _flag_contradictions(surviving_nodes, node_decisions, ent)
     live = {n.node_id for n in surviving_nodes}
+    labels_by_id = {n.node_id: n.label for n in candidate.nodes}
 
     edge_decisions: dict[str, VerifierDecision] = {}
     surviving_edges: list[Edge] = []
     for e in candidate.edges:
-        d = _verify_edge(e, spans_by_id, live)
+        d = _verify_edge(e, spans_by_id, live, labels_by_id)
         edge_decisions[e.edge_id] = d
         if d.decision in ("accept", "downgrade"):
             e.status = "verified" if d.decision == "accept" else "downgraded"
@@ -328,6 +375,11 @@ def verify_graph(
         calibration={"n_claims": len(all_decisions), "ece": None},  # ECE measured on gold (future)
         abstained=len(surviving_nodes) == 0,
         pipeline_version=doc.pipeline_version,
-        verifier_versions={"entailment": ent.version, "calibrator": "rule_v0", "rules": VERIFY_VERSION},
+        verifier_versions={
+            "entailment": ent.version,
+            "calibrator": _calibrator_version(),
+            "rules": VERIFY_VERSION,
+            "evidence": SCORER_VERSION,
+        },
         created_at=datetime.now(UTC).isoformat(),
     )
