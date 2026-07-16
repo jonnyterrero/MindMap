@@ -28,9 +28,28 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: "MindMap - Mental Health Companion",
-  description: "Your comprehensive mental health and wellness tracking companion with advanced analytics",
+  metadataBase: new URL("https://getmindmapplus.app"),
+  title: {
+    default: "MindMap - Mental Health Companion",
+    template: "%s | MindMap",
+  },
+  description:
+    "Private self-tracking for mood, sleep, migraines, and daily patterns. Log check-ins, journal, and reflect on trends — your data stays yours.",
   manifest: "/manifest.json",
+  openGraph: {
+    type: "website",
+    url: "https://getmindmapplus.app",
+    siteName: "MindMap",
+    title: "MindMap - Mental Health Companion",
+    description:
+      "Private self-tracking for mood, sleep, migraines, and daily patterns. Not medical advice — just your own signals, organized.",
+  },
+  twitter: {
+    card: "summary",
+    title: "MindMap - Mental Health Companion",
+    description:
+      "Private self-tracking for mood, sleep, migraines, and daily patterns.",
+  },
 }
 
 export default function RootLayout({

@@ -1,5 +1,9 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+/* Typography plugin: the (legal) route group renders long-form pages with
+   bare h1/h2/ul markup styled via `prose` — without this plugin those pages
+   collapse into unstyled body text (preflight strips heading/list styles). */
+@plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
 

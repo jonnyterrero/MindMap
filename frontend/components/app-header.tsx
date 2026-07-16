@@ -65,21 +65,25 @@ export function AppHeader({ user }: { user: SupabaseUser }) {
           <SyncIndicator />
         </div>
 
-        {/* Desktop inline primary nav */}
+        {/* Desktop inline primary nav. Button renders the Link itself via
+            asChild — nesting <button> inside <a> is invalid HTML that breaks
+            assistive tech, and navigation should be links, not buttons. */}
         <nav className="hidden items-center gap-1 md:flex" aria-label="Primary">
           {desktopPrimary.map(({ href, label, icon: Icon }) => {
             const active = isActive(pathname, href);
             return (
-              <Link key={href} href={href}>
-                <Button
-                  variant={active ? "default" : "ghost"}
-                  size="sm"
-                  className={cn("gap-1.5", active && "pointer-events-none")}
-                >
+              <Button
+                key={href}
+                asChild
+                variant={active ? "default" : "ghost"}
+                size="sm"
+                className="gap-1.5"
+              >
+                <Link href={href} aria-current={active ? "page" : undefined}>
                   <Icon className="h-4 w-4" aria-hidden="true" />
                   {label}
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             );
           })}
         </nav>
@@ -126,11 +130,20 @@ export function AppHeader({ user }: { user: SupabaseUser }) {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Link href="/settings" className="hidden sm:block">
-            <Button variant="ghost" size="icon" aria-label="Settings">
+          <Button
+            asChild
+            variant="ghost"
+            size="icon"
+            className="hidden sm:inline-flex"
+          >
+            <Link
+              href="/settings"
+              aria-label="Settings"
+              aria-current={isActive(pathname, "/settings") ? "page" : undefined}
+            >
               <Settings className="h-4 w-4" aria-hidden="true" />
-            </Button>
-          </Link>
+            </Link>
+          </Button>
           <form action={signout}>
             <Button type="submit" variant="ghost" size="icon" aria-label="Sign out">
               <LogOut className="h-4 w-4" aria-hidden="true" />

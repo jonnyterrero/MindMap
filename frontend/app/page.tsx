@@ -378,7 +378,7 @@ export default async function LandingPage() {
         </section>
       </main>
 
-      <PublicFooter />
+      <PublicFooter signedIn={signedIn} />
     </div>
   );
 }
