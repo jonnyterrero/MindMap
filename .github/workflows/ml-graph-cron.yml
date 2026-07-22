@@ -1,0 +1,63 @@
+name: ML mindmap graph batch (daily)
+
+# Runs the Python verified-mindmap batch on a schedule: reads journal entries,
+# builds a verified concept graph per entry, and upserts mindmap_graphs (the app
+# only reads them). Python batch -> GitHub Action, NOT a Vercel cron.
+#
+# Inert until repository secrets are set (Settings -> Secrets and variables ->
+# Actions -> Secrets):
+#   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY   (required)
+#   ANTHROPIC_API_KEY                          (optional: enables the LLM
+#                                               extractor + grounder; without it
+#                                               the batch runs the rule-skeleton
+#                                               fallback)
+# Idempotent (upsert on user_id+source_table+source_id+pipeline_version) and
+# content_sha-skips unchanged entries, so re-runs are cheap.
+
+on:
+  schedule:
+    - cron: "30 8 * * *" # daily 08:30 UTC (offset from the summary batch)
+  workflow_dispatch: {}
+
+concurrency:
+  group: ml-graph-batch
+  cancel-in-progress: false
+
+jobs:
+  graph:
+    name: Build & upsert verified mindmaps
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check secrets (skip if unset)
+        id: guard
+        env:
+          KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          LLM: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -n "$KEY" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "SUPABASE_SERVICE_ROLE_KEY not set — skipping (inert until configured)."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+          if [ -n "$LLM" ]; then echo "llm=--llm" >> "$GITHUB_OUTPUT"; else echo "llm=" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Setup uv
+        if: steps.guard.outputs.run == 'true'
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Run graph batch
+        if: steps.guard.outputs.run == 'true'
+        working-directory: ml
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          uv sync
+          uv pip install supabase anthropic
+          uv run python -m mindmap_ml.serving.graph_batch ${{ steps.guard.outputs.llm }}

@@ -70,13 +70,13 @@ def collect_points(cases=None, entailment=None) -> list[CalPoint]:
         surfaced_nodes = {n.node_id: n for n in art.nodes}
         surfaced_edges = {e.edge_id: e for e in art.edges}
         for i, claim in enumerate(case.claims):
-            el = surfaced_nodes.get(f"nd_{doc.doc_id}_{i}")
-            if el is not None and el.confidence is not None:
-                points.append(CalPoint(case.case_id, el.confidence.calibrated, 1.0 if claim.supported else 0.0))
+            node_el = surfaced_nodes.get(f"nd_{doc.doc_id}_{i}")
+            if node_el is not None and node_el.confidence is not None:
+                points.append(CalPoint(case.case_id, node_el.confidence.calibrated, 1.0 if claim.supported else 0.0))
         for j, ge in enumerate(case.edges):
-            el = surfaced_edges.get(f"ed_{doc.doc_id}_{j}")
-            if el is not None and el.confidence is not None:
-                points.append(CalPoint(case.case_id, el.confidence.calibrated, 1.0 if ge.supported else 0.0))
+            edge_el = surfaced_edges.get(f"ed_{doc.doc_id}_{j}")
+            if edge_el is not None and edge_el.confidence is not None:
+                points.append(CalPoint(case.case_id, edge_el.confidence.calibrated, 1.0 if ge.supported else 0.0))
     return points
 
 
@@ -98,7 +98,7 @@ def fit_platt(xs: list[float], ys: list[float], l2: float = 1e-2, iters: int = 5
     n = len(xs)
     for _ in range(iters):
         ga = gb = 0.0
-        for x, y in zip(xs, ys):
+        for x, y in zip(xs, ys, strict=True):
             err = _sigmoid(a * x + b) - y
             ga += err * x
             gb += err
@@ -116,7 +116,7 @@ def fit_isotonic(xs: list[float], ys: list[float]) -> list[tuple[float, float]]:
     sy = [ys[i] for i in order]
     # blocks of (weight, mean)
     blocks: list[list[float]] = []  # [weight, mean, x_last]
-    for x, y in zip(sx, sy):
+    for x, y in zip(sx, sy, strict=True):
         blocks.append([1.0, y, x])
         while len(blocks) > 1 and blocks[-2][1] >= blocks[-1][1]:
             w2, m2, x2 = blocks.pop()
@@ -139,7 +139,7 @@ def _isotonic_predict(breakpoints: list[tuple[float, float]], x: float) -> float
 # Selection: leave-one-case-out Brier
 # --------------------------------------------------------------------------- #
 def _brier(preds: list[float], ys: list[float]) -> float:
-    return sum((p - y) ** 2 for p, y in zip(preds, ys)) / len(preds)
+    return sum((p - y) ** 2 for p, y in zip(preds, ys, strict=True)) / len(preds)
 
 
 def loo_brier(points: list[CalPoint], method: str) -> float:

@@ -56,7 +56,10 @@ __pycache__/
 
 # Claude Code / local agent metrics (do not commit)
 .claude/
-MindMap/
+# Anchored to repo root so it ignores a stray top-level nested checkout only --
+# unanchored, it also swallowed the app's `mindmap/` route on case-insensitive
+# filesystems (macOS/Windows).
+/MindMap/
 
 # Capacitor native projects (regenerate via cap add + cap sync)
 frontend/ios/

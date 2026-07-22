@@ -6,6 +6,7 @@ import {
   Brain, Home, CalendarCheck, BookOpen, Pill, BarChart3,
   Lightbulb, MoreHorizontal, Settings, LogOut, Activity,
   MessageCircle, FileText, Target, Heart, ListChecks, User,
+  Waypoints,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ const desktopPrimary: NavItem[] = [
 // Secondary destinations — in "More" on every viewport.
 const moreNav: NavItem[] = [
   { href: "/home", label: "Home", icon: Home },
+  { href: "/mindmap", label: "Mindmap", icon: Waypoints },
   { href: "/medications", label: "Meds", icon: Pill },
   { href: "/companion", label: "Companion", icon: MessageCircle },
   { href: "/reports", label: "Reports", icon: FileText },
