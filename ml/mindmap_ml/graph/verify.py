@@ -28,7 +28,7 @@ import json
 import os
 import re
 from datetime import UTC, datetime
-from typing import Protocol
+from typing import Any, Protocol
 
 from .calibrate import active_calibrator
 from .evidence_scorer import SCORER_VERSION, clinical_gate, ground_causal, is_clinical
@@ -274,7 +274,10 @@ def _verify_edge(
         return VerifierDecision(edge.edge_id, "edge", "reject", None, ["no_provenance"])
 
     premise = " ".join(sp.text for sp in cited)
-    comp = {"provenance": has_span, "causal_cue": _has_causal_cue(premise) if edge.edge_type == "causal" else None}
+    comp: dict[str, Any] = {
+        "provenance": has_span,
+        "causal_cue": _has_causal_cue(premise) if edge.edge_type == "causal" else None,
+    }
 
     # Causal edges require explicit causal language to be 'directly_supported'.
     # Without it, the inferred cause survives (as a cited hypothesis) only when

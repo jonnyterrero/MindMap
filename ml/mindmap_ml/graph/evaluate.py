@@ -106,7 +106,7 @@ def evaluate(
         surfaced_edges = {e.edge_id: e for e in art.edges}
 
         # (claim_id, gold verdict, category, surfaced element or None)
-        scored: list[tuple[bool, str, object]] = []
+        scored: list[tuple[bool, str, Node | Edge | None]] = []
         for i, claim in enumerate(case.claims):
             nid = f"nd_{doc.doc_id}_{i}"
             scored.append((claim.supported, claim.category, surfaced.get(nid)))
