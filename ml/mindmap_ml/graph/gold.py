@@ -181,4 +181,46 @@ GOLD_CASES: tuple[GoldCase, ...] = (
             GoldEdge(0, 1, "causal", ("ate cereal", "migraine came back"), False, "causal_ungrounded"),
         ),
     ),
+    # ------------------------- irrealis / non-asserted mood ----------------- #
+    # A journal is full of clauses that mention a state without ASSERTING it:
+    # conditionals, wishes, plans, and things other people said. Lexical overlap
+    # is high (the words are right there), so a shallow grounder over-accepts —
+    # these motivate the assertion gate (evidence_scorer.assertion_gate).
+    GoldCase(
+        "conditional",
+        "If I sleep well, I feel calm the next day.",
+        # a hypothetical: the text does not say the writer feels calm now
+        (GoldClaim("feeling calm", "emotion", "feel calm", False, "irrealis"),),
+    ),
+    GoldCase(
+        "wish_counterfactual",
+        "I wish I had slept more last night.",
+        # a wish is the opposite of an assertion that it happened
+        (GoldClaim("slept more", "event", "slept more", False, "irrealis"),),
+    ),
+    GoldCase(
+        "future_plan",
+        "I am going to start therapy next month.",
+        # planned, not yet true
+        (GoldClaim("started therapy", "event", "start therapy", False, "irrealis"),),
+    ),
+    GoldCase(
+        "reported_speech",
+        "My mom thinks I am overreacting about work.",
+        # someone else's attributed opinion — not the writer's own state
+        (GoldClaim("overreacting", "value", "overreacting", False, "attribution"),),
+    ),
+    # ------------------------- temporal edge (positive) --------------------- #
+    GoldCase(
+        "temporal_explicit",
+        "I woke up early, then I went for a walk.",
+        (
+            GoldClaim("woke up early", "event", "woke up", True, "supported"),
+            GoldClaim("went for a walk", "event", "went for a walk", True, "supported"),
+        ),
+        edges=(
+            # temporal edges need provenance, not a causal cue — should surface
+            GoldEdge(0, 1, "temporal", ("then",), True, "temporal_explicit"),
+        ),
+    ),
 )

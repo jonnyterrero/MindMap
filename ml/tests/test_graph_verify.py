@@ -103,3 +103,29 @@ def test_abstained_flag_when_nothing_survives() -> None:
     art = verify_graph(doc, spans, CandidateGraph(doc.doc_id, [n], []))
     assert art.abstained is True and art.nodes == []
     assert art.coverage["spans_total"] == 1
+
+
+def test_irrealis_emotion_claim_abstains() -> None:
+    # "If I sleep well, I feel calm" — a conditional does not assert feeling calm
+    doc, spans = digest("If I sleep well, I feel calm the next day.", user_id="u1")
+    n = Node("n1", "feeling calm", "emotion", evidence=[spans[0].span_id])
+    art = verify_graph(doc, spans, CandidateGraph(doc.doc_id, [n], []))
+    assert art.nodes == []
+    d = next(d for d in art.decisions if d.claim_id == "n1")
+    assert "non_asserted_irrealis" in d.reason_codes
+
+
+def test_attributed_state_claim_abstains() -> None:
+    doc, spans = digest("My mom thinks I am overreacting.", user_id="u1")
+    n = Node("n1", "overreacting", "value", evidence=[spans[0].span_id])
+    art = verify_graph(doc, spans, CandidateGraph(doc.doc_id, [n], []))
+    assert art.nodes == []
+    assert any("attributed_to_third_party" in d.reason_codes for d in art.decisions)
+
+
+def test_plain_feeling_still_surfaces() -> None:
+    # the assertion gate must not cost recall on a real, asserted feeling
+    doc, spans = digest("I feel anxious about work.", user_id="u1")
+    n = Node("n1", "anxious about work", "emotion", evidence=[spans[0].span_id])
+    art = verify_graph(doc, spans, CandidateGraph(doc.doc_id, [n], []))
+    assert len(art.nodes) == 1 and art.nodes[0].status == "verified"

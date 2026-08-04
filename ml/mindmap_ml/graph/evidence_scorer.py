@@ -151,6 +151,86 @@ def clinical_gate(label: str, premise: str) -> GateResult:
     return GateResult(True, ["clinical_claim_capped"], _dedupe(citations))
 
 
+# --------------------------------------------------------------------------- #
+# Assertion / mood gate
+# --------------------------------------------------------------------------- #
+# A journal mentions states without ASSERTING them: conditionals ("if I sleep
+# well I feel calm"), wishes ("I wish I'd slept"), plans ("I'm going to start
+# therapy"), and things OTHER PEOPLE said ("my mom thinks I'm overreacting").
+# Lexical overlap is high in all of these, so entailment over-accepts. This gate
+# blocks a state/event claim whose cited span is irrealis (non-actual mood) or
+# attributed to a third party. Deliberately HIGH-PRECISION: markers that also
+# co-occur with asserted content ("could", "would", "might") are excluded so the
+# gate does not cost recall on real feelings ("so stressed I could scream").
+
+# Whole-word irrealis markers (matched on tokens, so "hopeful" != "hope").
+_IRREALIS_WORDS = frozenset(
+    ["if", "unless", "whenever", "wish", "wished", "wishing", "hopefully",
+     "tomorrow", "someday", "eventually", "gonna"]
+)
+# Irrealis multi-word cues (matched as substrings in the lowercased premise).
+_IRREALIS_PHRASES: tuple[str, ...] = (
+    "going to", "about to", "plan to", "planning to", "hope to", "hoping to",
+    "want to", "wants to", "wanted to", "if only", "would have", "used to",
+    "next week", "next month", "next year",
+)
+# Future auxiliary — as a token or the "'ll" contraction.
+_FUTURE_TOKENS = frozenset(["will"])
+
+# Third-party subjects + speech/cognition verbs: an ATTRIBUTED state, not the
+# writer's own. Fires only when the subject sits immediately before the verb, so
+# "I told my friend I was sad" (first-person subject) is NOT gated.
+_ATTRIB_VERBS = frozenset(
+    ["thinks", "think", "thought", "said", "says", "say", "believes", "believe",
+     "told", "claims", "claimed", "suggested", "feels", "insists", "worries"]
+)
+_THIRD_PARTY = frozenset(
+    ["mom", "mum", "mother", "dad", "father", "therapist", "doctor", "friend",
+     "boss", "partner", "wife", "husband", "sister", "brother", "family",
+     "she", "he", "they", "everyone", "people", "someone", "nobody"]
+)
+_DETERMINERS = frozenset(["my", "the", "a", "an", "his", "her", "their", "our"])
+
+# Node types whose claims assert an actual state/event (so the mood matters).
+ASSERTION_GATED_TYPES = frozenset(["emotion", "event", "value"])
+
+
+def _is_irrealis(premise: str) -> bool:
+    low = premise.lower()
+    if any(phrase in low for phrase in _IRREALIS_PHRASES):
+        return True
+    if "'ll" in low:
+        return True
+    toks = _WORD_RE.findall(low)
+    return bool(set(toks) & (_IRREALIS_WORDS | _FUTURE_TOKENS))
+
+
+def _is_attributed(premise: str) -> bool:
+    toks = _WORD_RE.findall(premise.lower())
+    for i, tok in enumerate(toks):
+        if tok in _ATTRIB_VERBS:
+            j = i - 1
+            while j >= 0 and toks[j] in _DETERMINERS:
+                j -= 1
+            if j >= 0 and toks[j] in _THIRD_PARTY:
+                return True
+    return False
+
+
+def assertion_gate(premise: str) -> GateResult:
+    """Gate a state/event claim on whether its cited span actually ASSERTS it.
+
+    Blocks irrealis premises (conditional / wish / future / planned) and
+    third-party attribution. Returns allowed=True with no reasons otherwise.
+    Caller applies it only to ``ASSERTION_GATED_TYPES`` node claims.
+    """
+    if _is_irrealis(premise):
+        return GateResult(False, ["non_asserted_irrealis"])
+    if _is_attributed(premise):
+        return GateResult(False, ["attributed_to_third_party"])
+    return GateResult(True, [])
+
+
 @dataclass
 class CausalGrounding:
     grounded: bool

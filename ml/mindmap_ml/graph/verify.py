@@ -31,7 +31,14 @@ from datetime import UTC, datetime
 from typing import Any, Protocol
 
 from .calibrate import active_calibrator
-from .evidence_scorer import SCORER_VERSION, clinical_gate, ground_causal, is_clinical
+from .evidence_scorer import (
+    ASSERTION_GATED_TYPES,
+    SCORER_VERSION,
+    assertion_gate,
+    clinical_gate,
+    ground_causal,
+    is_clinical,
+)
 from .schema import (
     CLAIM_CLASSES,
     EDGE_TYPES,
@@ -232,6 +239,16 @@ def _verify_node(node: Node, spans_by_id: dict[str, TextSpan], ent: Entailment) 
         return VerifierDecision(node.node_id, "node", "reject", None, [*reasons, "nli_contradict"], comp, escalated=True)
 
     would_surface = (has_span and label == "entail") or (score >= TAU_LOW and (has_span or inferred_ok))
+
+    # (C1) assertion/mood gate: a state/event claim is only grounded if its cited
+    # span actually ASSERTS it. Conditional / wished / planned / future clauses
+    # and states attributed to other people are not assertions — entailment sees
+    # the words and over-accepts, so block those before anything surfaces.
+    if would_surface and node.node_type in ASSERTION_GATED_TYPES:
+        agate = assertion_gate(premise)
+        comp["assertion_gate"] = {"allowed": agate.allowed, "reasons": agate.reasons}
+        if not agate.allowed:
+            return VerifierDecision(node.node_id, "node", "abstain", None, [*reasons, *agate.reasons], comp)
 
     # (C2) evidence gate for clinical/diagnostic claims: entailment alone is not
     # enough — the cited text must NAME the condition (unhedged), and even then
