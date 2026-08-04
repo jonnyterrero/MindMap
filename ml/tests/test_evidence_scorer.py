@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from mindmap_ml.graph.evidence_scorer import (
     CausalGrounding,
+    assertion_gate,
     clinical_gate,
     ground_causal,
     is_clinical,
@@ -63,7 +64,7 @@ def test_prior_backed_pair_grounds_with_citation() -> None:
     g = ground_causal("barely slept", "migraine came back")
     assert g.grounded
     assert g.citations
-    assert any("sleep_deficit->migraine" == m for m in g.matched)
+    assert any(m == "sleep_deficit->migraine" for m in g.matched)
 
 
 def test_orientation_agnostic() -> None:
@@ -81,3 +82,45 @@ def test_unmapped_pair_is_ungrounded() -> None:
 def test_lemma_normalization_meets_prior_vocabulary() -> None:
     # surface forms: slept/anxious vs priors' sleep_deficit/anxiety
     assert ground_causal("slept terribly", "felt anxious").grounded
+
+
+# --------------------------------------------------------------------------- #
+# assertion_gate — irrealis / attribution mood
+# --------------------------------------------------------------------------- #
+def test_conditional_premise_blocked() -> None:
+    g = assertion_gate("If I sleep well, I feel calm the next day.")
+    assert not g.allowed and "non_asserted_irrealis" in g.reasons
+
+
+def test_wish_and_future_blocked() -> None:
+    assert not assertion_gate("I wish I had slept more last night.").allowed
+    assert not assertion_gate("I am going to start therapy next month.").allowed
+    assert not assertion_gate("I'll call my therapist tomorrow.").allowed
+
+
+def test_third_party_attribution_blocked() -> None:
+    g = assertion_gate("My mom thinks I am overreacting about work.")
+    assert not g.allowed and "attributed_to_third_party" in g.reasons
+    assert not assertion_gate("She said I seem anxious.").allowed
+
+
+def test_plain_assertion_allowed() -> None:
+    assert assertion_gate("I feel anxious about work and I slept badly.").allowed
+    assert assertion_gate("I woke up early and went for a walk.").allowed
+
+
+def test_first_person_report_not_attributed() -> None:
+    # first-person subject before the speech verb -> the writer's own assertion
+    assert assertion_gate("I told my friend I was sad.").allowed
+
+
+def test_intense_feeling_not_over_blocked() -> None:
+    # "could" is deliberately NOT an irrealis marker: it co-occurs with real
+    # asserted feeling ("so stressed I could scream") and must not cost recall.
+    assert assertion_gate("I am so stressed I could scream.").allowed
+
+
+def test_hopeful_is_not_a_wish() -> None:
+    # token-level matching: "hopeful" must not trip the "hope"/"wish" markers
+    assert assertion_gate("hopeful").allowed
+    assert assertion_gate("I feel hopeful today.").allowed
