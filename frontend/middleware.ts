@@ -35,14 +35,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 2. For API routes, if unauthenticated return 401 JSON (not HTML redirect)
-  //    Exception: /api/auth/** must pass through for Supabase auth callbacks
-  if (pathname.startsWith(API_PREFIX)) {
-    if (pathname.startsWith("/api/auth")) {
-      return NextResponse.next();
-    }
-    // API auth check is handled below — will return 401 if no session
-  }
+  // 2. API routes get no blanket exemption: every /api/** request falls through
+  //    to the session check below and returns 401 JSON (not an HTML redirect)
+  //    when unauthenticated. Supabase's email/OAuth callbacks live under
+  //    /auth/** (see /auth/confirm in PUBLIC_ROUTES), never under /api/auth.
 
   // 3. Forward the pathname so server components / layouts can read it
   //    via headers().get("x-pathname"). Next.js does not expose the
