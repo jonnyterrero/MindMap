@@ -11,6 +11,12 @@
 --    holding any active grant.
 --
 -- Idempotent: safe to re-run.
+--
+-- Grant note: Supabase's default privileges attach EXECUTE for anon and
+-- authenticated to every new function in the public schema. REVOKE ALL
+-- FROM public does NOT remove those role grants, so each function below
+-- revokes anon explicitly. Without it, DROP+CREATE silently discards the
+-- hardening applied by the out-of-repo tighten_function_grants migration.
 -- ============================================================
 
 BEGIN;
@@ -84,6 +90,10 @@ AS $$
 $$;
 
 REVOKE ALL ON FUNCTION public.fn_provider_detail_level(uuid, uuid, text, date, date) FROM public;
+-- Takes the provider id as a parameter rather than reading auth.uid(), so an
+-- anon caller could otherwise probe whether a given provider/patient share
+-- exists and at what detail level.
+REVOKE ALL ON FUNCTION public.fn_provider_detail_level(uuid, uuid, text, date, date) FROM anon;
 GRANT EXECUTE ON FUNCTION public.fn_provider_detail_level(uuid, uuid, text, date, date) TO authenticated;
 
 
@@ -170,6 +180,7 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION public.rpc_provider_get_entries(uuid, date, date) FROM public;
+REVOKE ALL ON FUNCTION public.rpc_provider_get_entries(uuid, date, date) FROM anon;
 GRANT EXECUTE ON FUNCTION public.rpc_provider_get_entries(uuid, date, date) TO authenticated;
 
 
@@ -226,6 +237,7 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION public.rpc_provider_get_insights(uuid, date, date) FROM public;
+REVOKE ALL ON FUNCTION public.rpc_provider_get_insights(uuid, date, date) FROM anon;
 GRANT EXECUTE ON FUNCTION public.rpc_provider_get_insights(uuid, date, date) TO authenticated;
 
 
@@ -263,6 +275,7 @@ AS $$
 $$;
 
 REVOKE ALL ON FUNCTION public.rpc_provider_get_patient_profiles(uuid[]) FROM public;
+REVOKE ALL ON FUNCTION public.rpc_provider_get_patient_profiles(uuid[]) FROM anon;
 GRANT EXECUTE ON FUNCTION public.rpc_provider_get_patient_profiles(uuid[]) TO authenticated;
 
 COMMENT ON FUNCTION public.rpc_provider_get_patient_profiles(uuid[]) IS
