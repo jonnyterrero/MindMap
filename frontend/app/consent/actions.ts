@@ -2,6 +2,8 @@
 
 import { createClient } from "@/lib/supabase-server";
 import { redirect } from "next/navigation";
+import { AnalyticsEvent } from "@/lib/analytics-events";
+import { captureServerEvent } from "@/lib/analytics-server";
 
 export async function checkConsentStatus() {
   const supabase = await createClient();
@@ -35,6 +37,10 @@ export async function grantConsent(consentTypes: string[]) {
 
   const { error } = await supabase.from("consent_records").insert(records);
   if (error) return { error: error.message };
+
+  await captureServerEvent(user.id, AnalyticsEvent.ConsentGranted, {
+    type_count: consentTypes.length,
+  });
 
   redirect("/today");
 }

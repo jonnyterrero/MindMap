@@ -1,6 +1,8 @@
 "use server";
 
 import { createClient } from "@/lib/supabase-server";
+import { AnalyticsEvent } from "@/lib/analytics-events";
+import { captureServerEvent } from "@/lib/analytics-server";
 
 export type ConversationSummary = {
   id: string;
@@ -35,6 +37,9 @@ export async function createConversation(
     .single();
 
   if (error) return { error: error.message };
+  await captureServerEvent(user.id, AnalyticsEvent.CompanionStarted, {
+    has_context: Boolean(contextEntryId),
+  });
   return { id: data.id as string };
 }
 

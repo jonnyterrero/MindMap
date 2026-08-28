@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase-server";
 import { revalidatePath } from "next/cache";
 import { calculateMindMapScore } from "@/lib/mindmap-score";
 import { syncTodayWeather } from "@/app/(app)/settings/actions";
+import { AnalyticsEvent } from "@/lib/analytics-events";
+import { captureServerEvent } from "@/lib/analytics-server";
 
 const DEFAULT_CHECKIN_CARDS = [
   "sleep",
@@ -373,5 +375,10 @@ export async function saveCheckIn(payload: EntryPayload) {
 
   revalidatePath("/today");
   revalidatePath("/home");
+
+  await captureServerEvent(user.id, AnalyticsEvent.CheckinSaved, {
+    is_new: created,
+  });
+
   return { success: true, score, created };
 }

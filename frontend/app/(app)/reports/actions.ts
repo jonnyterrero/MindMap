@@ -3,6 +3,8 @@
 import { createClient } from "@/lib/supabase-server";
 import { revalidatePath } from "next/cache";
 import { buildReportForUser, type BuiltReport } from "@/lib/report-core";
+import { AnalyticsEvent } from "@/lib/analytics-events";
+import { captureServerEvent } from "@/lib/analytics-server";
 
 export type ReportRow = BuiltReport;
 
@@ -31,5 +33,8 @@ export async function generateReport(
   if ("skipped" in result) return { error: "Report already generated for this period." };
 
   revalidatePath("/reports");
+  await captureServerEvent(user.id, AnalyticsEvent.ReportGenerated, {
+    report_type: reportType,
+  });
   return { report: result.report };
 }

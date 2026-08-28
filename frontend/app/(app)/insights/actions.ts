@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase-server";
 import { computeMigraineRisk, computeMoodTrend } from "@/lib/insights-engine";
 import { computeCorrelations, type Correlation } from "@/lib/correlation-engine";
 import { revalidatePath } from "next/cache";
+import { AnalyticsEvent } from "@/lib/analytics-events";
+import { captureServerEvent } from "@/lib/analytics-server";
 
 const CORRELATION_MIN_DAYS = 10;
 
@@ -46,6 +48,7 @@ export async function generateInsights() {
 
   revalidatePath("/insights");
   revalidatePath("/dashboard");
+  await captureServerEvent(user.id, AnalyticsEvent.InsightsGenerated);
 
   const { data: saved } = await supabase
     .from("mindmap_insights")
