@@ -74,17 +74,6 @@ export async function upsertTodayEntry(payload: EntryPayload) {
   return { success: true };
 }
 
-export async function getBodySensations(entryId: string) {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("mindmap_body_sensations")
-    .select("*")
-    .eq("entry_id", entryId)
-    .order("created_at", { ascending: true });
-
-  return data ?? [];
-}
-
 export async function addBodySensation(
   bodyPart: string,
   sensation: string,

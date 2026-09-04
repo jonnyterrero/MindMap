@@ -77,3 +77,9 @@ frontend/playwright-report/
 frontend/test-results/
 frontend/blob-report/
 frontend/e2e/.auth/
+
+# Retired trees kept locally, removed from the repo (2026-09-04)
+/legacy/
+/legacy branches/
+/cursor-claude-legacy/
+/sleep-stress/
