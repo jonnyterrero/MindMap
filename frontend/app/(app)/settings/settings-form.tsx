@@ -1,11 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { updateProfile, requestDataDeletion, changePassword } from "./actions";
+import { updateProfile, changePassword } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -20,7 +19,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Save, Loader2, Check, Trash2, AlertTriangle, Download, KeyRound } from "lucide-react";
+import { Save, Loader2, Check, Download, KeyRound } from "lucide-react";
 
 type Profile = Record<string, unknown> | null;
 
@@ -49,10 +48,6 @@ export function SettingsForm({ profile }: { profile: Profile }) {
   const [timezone, setTimezone] = useState(
     (profile?.timezone as string) ?? "America/New_York"
   );
-
-  const [showDelete, setShowDelete] = useState(false);
-  const [deleteReason, setDeleteReason] = useState("");
-  const [deleteSubmitted, setDeleteSubmitted] = useState(false);
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -91,18 +86,6 @@ export function SettingsForm({ profile }: { profile: Profile }) {
       } else {
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
-      }
-    });
-  }
-
-  function handleDeleteRequest() {
-    startTransition(async () => {
-      const result = await requestDataDeletion("all", deleteReason);
-      if (result.error) {
-        setError(result.error);
-      } else {
-        setDeleteSubmitted(true);
-        setShowDelete(false);
       }
     });
   }
@@ -248,52 +231,14 @@ export function SettingsForm({ profile }: { profile: Profile }) {
         </CardContent>
       </Card>
 
-      <Card className="glass-card border-destructive/20">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-destructive">
-            <AlertTriangle className="h-5 w-5" /> Danger Zone
-          </CardTitle>
-          <CardDescription>
-            Request deletion of your data. This cannot be undone.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {deleteSubmitted ? (
-            <p className="text-sm text-green-600">
-              Deletion request submitted. We&apos;ll process it and notify you.
-            </p>
-          ) : !showDelete ? (
-            <Button
-              variant="destructive"
-              onClick={() => setShowDelete(true)}
-            >
-              <Trash2 className="h-4 w-4" /> Request Data Deletion
-            </Button>
-          ) : (
-            <div className="space-y-3">
-              <Textarea
-                placeholder="Why are you deleting your data? (optional)"
-                value={deleteReason}
-                onChange={(e) => setDeleteReason(e.target.value)}
-                rows={3}
-              />
-              <div className="flex gap-2">
-                <Button
-                  variant="destructive"
-                  onClick={handleDeleteRequest}
-                  disabled={isPending}
-                >
-                  {isPending ? <Loader2 className="animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                  Confirm Deletion Request
-                </Button>
-                <Button variant="ghost" onClick={() => setShowDelete(false)}>
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/*
+        Account deletion lives in <DataPrivacy /> (settings/page.tsx) rather
+        than here. That path requires typing "DELETE" and cascades immediately
+        via admin.auth.admin.deleteUser -- it actually removes data. The old
+        "Request Data Deletion" card in this component only inserted a row
+        into data_deletion_requests that nothing processed, and told users
+        "we'll process it and notify you" -- a false claim under GDPR/CCPA.
+      */}
     </div>
   );
 }
