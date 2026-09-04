@@ -5,6 +5,11 @@ _Last updated: 2026-06-17 · `main` @ `ace7059` · working tree clean · 173 `ml
 This doc orients a fresh session. There are **two independent ML workstreams** in `ml/`.
 Read this, then the canonical specs it points to.
 
+For the next real-data training and production-hosting phase, start with
+**[`REAL_ML_TRAINING_AND_HOSTING_HANDOFF.md`](REAL_ML_TRAINING_AND_HOSTING_HANDOFF.md)**.
+It defines the required order: real-data correctness → training pipeline →
+shadow evaluation → AWS ML plane.
+
 ---
 
 ## 0. Orientation & gotchas (read first)
