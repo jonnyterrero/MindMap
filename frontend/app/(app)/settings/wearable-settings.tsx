@@ -3,7 +3,6 @@
 import { useState, useTransition } from "react";
 import {
   logMetric,
-  connectSource,
   disconnectSource,
   type WearableSourceRow,
   type RecentMetric,
@@ -26,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Activity, Loader2, Plus, Trash2, Smartphone } from "lucide-react";
+import { Activity, Loader2, Plus, Trash2 } from "lucide-react";
 
 export function WearableSettings({
   sources: initialSources,
@@ -56,19 +55,6 @@ export function WearableSettings({
     });
   }
 
-  function connect(type: WearableSourceType) {
-    startTransition(async () => {
-      const r = await connectSource(type);
-      if (!("error" in r)) {
-        setSources((s) =>
-          s.some((x) => x.source_type === type)
-            ? s
-            : [{ id: `temp-${type}`, source_type: type, is_active: true, last_sync_at: null }, ...s],
-        );
-      }
-    });
-  }
-
   function remove(id: string, type: string) {
     setSources((s) => s.filter((x) => x.source_type !== type));
     startTransition(async () => {
@@ -81,10 +67,14 @@ export function WearableSettings({
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
           <Activity className="h-5 w-5 text-primary" /> Wearables &amp; health data
+          <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            Manual entry
+          </span>
         </CardTitle>
         <CardDescription>
-          Log metrics like HRV and sleep score — they feed your predictions. Apple Health /
-          Health Connect sync automatically in the mobile app.
+          Log HRV and sleep score by hand — they feed your predictions. Automatic
+          sync from Apple Health, Health Connect, and other devices is coming
+          soon and isn&apos;t wired yet.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
@@ -132,34 +122,36 @@ export function WearableSettings({
           </div>
         )}
 
-        {/* Connected sources */}
+        {/* Device sync -- deferred. The old "Connect Apple Health" / "Connect
+            Health Connect" buttons wrote a stub row to mindmap_wearable_sources
+            and did nothing else; no OAuth, no token exchange, no ingestion.
+            Existing "connected" rows from before this pass stay visible so
+            users can disconnect them; the connect buttons are gone. */}
         <div className="space-y-2 border-t pt-4">
-          <Label>Connected sources</Label>
-          {sources.length > 0 ? (
+          <div className="flex items-center gap-2">
+            <Label>Device sync</Label>
+            <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              Coming soon
+            </span>
+          </div>
+          {sources.length > 0 && (
             <div className="space-y-1.5">
               {sources.map((s) => (
                 <div key={s.id} className="flex items-center justify-between rounded-lg border p-2.5">
-                  <span className="text-sm">{SOURCE_META[s.source_type as WearableSourceType]?.label ?? s.source_type}</span>
+                  <span className="text-sm">
+                    {SOURCE_META[s.source_type as WearableSourceType]?.label ?? s.source_type}
+                    <span className="ml-2 text-xs text-muted-foreground">(placeholder — no data flowed)</span>
+                  </span>
                   <Button size="sm" variant="ghost" onClick={() => remove(s.id, s.source_type)} disabled={isPending}>
-                    <Trash2 className="h-4 w-4 text-destructive" /> Disconnect
+                    <Trash2 className="h-4 w-4 text-destructive" /> Remove
                   </Button>
                 </div>
               ))}
             </div>
-          ) : (
-            <p className="text-xs text-muted-foreground">No sources connected.</p>
           )}
-          <div className="flex flex-wrap gap-2">
-            {(["apple_health", "health_connect"] as WearableSourceType[])
-              .filter((t) => !sources.some((s) => s.source_type === t))
-              .map((t) => (
-                <Button key={t} size="sm" variant="outline" onClick={() => connect(t)} disabled={isPending}>
-                  <Smartphone className="h-4 w-4" /> Connect {SOURCE_META[t].label}
-                </Button>
-              ))}
-          </div>
           <p className="text-xs text-muted-foreground">
-            Your health data stays in your private account. Automatic device sync runs in the MindMap mobile app.
+            Native Apple Health and Health Connect sync will land in a future
+            release. Until then, log the metrics you care about above.
           </p>
         </div>
       </CardContent>

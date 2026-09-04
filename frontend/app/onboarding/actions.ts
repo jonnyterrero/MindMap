@@ -3,6 +3,8 @@
 import { createClient } from "@/lib/supabase-server";
 import { redirect } from "next/navigation";
 import { FOCUS_OPTIONS, CHECKIN_CARDS, type FocusOption } from "./constants";
+import { AnalyticsEvent } from "@/lib/analytics-events";
+import { captureServerEvent } from "@/lib/analytics-server";
 
 export async function checkOnboardingStatus(): Promise<boolean> {
   const supabase = await createClient();
@@ -52,6 +54,10 @@ export async function completeOnboarding(input: {
   );
 
   if (error) return { error: error.message };
+
+  await captureServerEvent(user.id, AnalyticsEvent.OnboardingCompleted, {
+    card_count: cards.length,
+  });
 
   // On success this throws NEXT_REDIRECT and never returns.
   redirect("/today");

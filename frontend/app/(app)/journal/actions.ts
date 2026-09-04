@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase-server";
 import { revalidatePath } from "next/cache";
 import { reflectOnJournalText, REFLECTION_MODEL } from "@/lib/ai-reflection";
 import { detectCrisis, CRISIS_RESOURCES, type CrisisSeverity } from "@/lib/crisis-detection";
+import { AnalyticsEvent } from "@/lib/analytics-events";
+import { captureServerEvent } from "@/lib/analytics-server";
 
 export type CrisisFlag = { severity: CrisisSeverity; eventId: string | null };
 
@@ -53,6 +55,7 @@ export async function createJournalEntry(
 
   if (error) return { error: error.message };
   revalidatePath("/journal");
+  await captureServerEvent(user.id, AnalyticsEvent.JournalCreated);
 
   // Crisis trigger point: scan the saved content.
   const severity = detectCrisis(payload.content);

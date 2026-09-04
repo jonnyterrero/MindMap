@@ -2,7 +2,8 @@ import type React from "react"
 import type { Metadata, Viewport } from "next"
 import { Space_Grotesk, DM_Sans } from "next/font/google"
 import "./globals.css"
-import { Analytics } from "@vercel/analytics/react"
+import { Analytics } from "@vercel/analytics/next"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import { UpdatePrompt } from "@/components/update-prompt"
 import { THEME_INIT_SCRIPT } from "@/lib/themes"
 
@@ -68,6 +69,7 @@ export default function RootLayout({
       <body className={`font-sans ${spaceGrotesk.variable} ${dmSans.variable} antialiased`}>
         {children}
         <Analytics />
+        <SpeedInsights />
         <UpdatePrompt />
       </body>
     </html>

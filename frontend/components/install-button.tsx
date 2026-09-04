@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Download, Sparkles } from "lucide-react"
+import { AnalyticsEvent, captureEvent } from "@/lib/analytics"
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[]
@@ -56,6 +57,9 @@ export function InstallButton() {
 
       if (outcome === "accepted") {
         setIsInstalled(true)
+        captureEvent(AnalyticsEvent.PwaInstallAccepted)
+      } else {
+        captureEvent(AnalyticsEvent.PwaInstallDismissed)
       }
 
       setDeferredPrompt(null)

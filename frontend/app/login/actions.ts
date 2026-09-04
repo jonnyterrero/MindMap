@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase-server";
+import { AnalyticsEvent } from "@/lib/analytics-events";
+import { captureServerEvent } from "@/lib/analytics-server";
 
 // Resolve the public app origin for email redirect links.
 // Prefers NEXT_PUBLIC_APP_URL, falls back to the request origin so we never
@@ -30,6 +32,11 @@ export async function signIn(formData: FormData) {
     return { error: error.message };
   }
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user) await captureServerEvent(user.id, AnalyticsEvent.SignedIn);
+
   revalidatePath("/", "layout");
   redirect("/today");
 }
@@ -54,6 +61,11 @@ export async function signUp(formData: FormData) {
     return { error: error.message };
   }
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user) await captureServerEvent(user.id, AnalyticsEvent.SignedUp);
+
   // If email confirmation is disabled in Supabase, this redirects immediately.
   // If enabled, user gets a confirmation email and lands here after clicking it.
   revalidatePath("/", "layout");
@@ -63,6 +75,10 @@ export async function signUp(formData: FormData) {
 // ─── Sign Out ─────────────────────────────────────────────────────────────────
 export async function signOut() {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user) await captureServerEvent(user.id, AnalyticsEvent.SignedOut);
   await supabase.auth.signOut();
   revalidatePath("/", "layout");
   redirect("/login");

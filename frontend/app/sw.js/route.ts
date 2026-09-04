@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server"
 
+// The service worker is served from a route rather than public/sw.js so it can
+// carry no-store and Service-Worker-Allowed headers. A statically served worker
+// gets cached by the browser, which makes shipping worker updates unreliable.
+// public/sw.js previously shadowed this route and has been removed.
 export async function GET() {
   const swCode = `
-// Service Worker for MindTrack PWA
-const CACHE_NAME = 'mindtrack-v1';
+// Service Worker for the MindMap PWA
+// Bumping CACHE_NAME purges every older cache via the activate handler below.
+const CACHE_NAME = 'mindmap-v2';
 const urlsToCache = [
   '/',
   '/manifest.json',

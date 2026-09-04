@@ -2,4 +2,5 @@ packages:
   - .
 
 allowBuilds:
+  core-js: false
   sharp: true
