@@ -114,8 +114,15 @@ export const config = {
      * - _next/static  (Next.js static assets)
      * - _next/image   (Next.js image optimization)
      * - favicon.ico
+     * - sw.js, manifest.json  (PWA assets — see below)
      * - Any file with an extension (images, fonts, etc.)
+     *
+     * sw.js and manifest.json must be excluded explicitly: the extension
+     * list below covers images and fonts but not .js or .json, so both were
+     * matched and redirected to /login for signed-out visitors. That made
+     * the PWA uninstallable and stopped the service worker from ever
+     * registering on a first visit — exactly when it needs to.
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf|otf)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sw\\.js|manifest\\.json|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf|otf)$).*)",
   ],
 };
