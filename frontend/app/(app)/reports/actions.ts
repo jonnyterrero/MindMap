@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { buildReportForUser, type BuiltReport } from "@/lib/report-core";
 import { AnalyticsEvent } from "@/lib/analytics-events";
 import { captureServerEvent } from "@/lib/analytics-server";
+import { consumeAiQuota, quotaExceededMessage } from "@/lib/ai-rate-limit";
 
 export type ReportRow = BuiltReport;
 
@@ -27,6 +28,12 @@ export async function generateReport(
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
+
+  // Daily per-user quota (cost/abuse guardrail).
+  const quotaCheck = await consumeAiQuota(supabase, "report");
+  if (!quotaCheck.allowed) {
+    return { error: quotaExceededMessage("report") };
+  }
 
   const result = await buildReportForUser(supabase, user.id, reportType);
   if ("error" in result) return { error: result.error };

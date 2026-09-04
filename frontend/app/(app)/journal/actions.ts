@@ -6,6 +6,7 @@ import { reflectOnJournalText, REFLECTION_MODEL } from "@/lib/ai-reflection";
 import { detectCrisis, CRISIS_RESOURCES, type CrisisSeverity } from "@/lib/crisis-detection";
 import { AnalyticsEvent } from "@/lib/analytics-events";
 import { captureServerEvent } from "@/lib/analytics-server";
+import { consumeAiQuota, quotaExceededMessage } from "@/lib/ai-rate-limit";
 
 export type CrisisFlag = { severity: CrisisSeverity; eventId: string | null };
 
@@ -151,6 +152,12 @@ export async function reflectOnJournalEntry(
     .maybeSingle();
   if (!entry?.content) {
     return { error: "Entry not found or empty." };
+  }
+
+  // Daily per-user quota (cost/abuse guardrail).
+  const quotaCheck = await consumeAiQuota(supabase, "journal_reflection");
+  if (!quotaCheck.allowed) {
+    return { error: quotaExceededMessage("journal_reflection") };
   }
 
   let reflection;

@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase-server";
 import { detectCrisis, CRISIS_RESOURCES } from "@/lib/crisis-detection";
+import { consumeAiQuota, quotaExceededMessage } from "@/lib/ai-rate-limit";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -48,6 +49,12 @@ export async function POST(req: Request) {
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return new Response("AI is not configured", { status: 503 });
+
+  // Daily per-user quota (cost/abuse guardrail).
+  const quotaCheck = await consumeAiQuota(supabase, "chat");
+  if (!quotaCheck.allowed) {
+    return new Response(quotaExceededMessage("chat"), { status: 429 });
+  }
 
   // Crisis guardrail.
   const severity = detectCrisis(userMessage);

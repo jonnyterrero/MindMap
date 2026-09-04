@@ -57,8 +57,15 @@ export function ChatView({
       }
 
       if (!res.ok || !res.body) {
+        // Surface server-provided copy (e.g. the daily-limit message on 429).
+        const serverText = await res.text().catch(() => "");
+        const fallback = "Sorry — I couldn't respond. Please try again.";
         setMessages((m) =>
-          m.map((x) => (x.id === assistantId ? { ...x, content: "Sorry — I couldn't respond. Please try again." } : x)),
+          m.map((x) =>
+            x.id === assistantId
+              ? { ...x, content: serverText.trim() || fallback }
+              : x,
+          ),
         );
         return;
       }

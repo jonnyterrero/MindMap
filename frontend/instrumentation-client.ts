@@ -2,6 +2,22 @@
 // Pageviews/pageleaves come from `defaults`. This file ships with the GitHub
 // repo so every clone and the Vercel production app share the same wiring.
 import posthog from "posthog-js"
+import * as Sentry from "@sentry/nextjs"
+
+// Sentry error monitoring — inert without a DSN. Health app: no session
+// replay (journal text must never reach a recorder), no PII.
+const SENTRY_DSN = process.env.NEXT_PUBLIC_SENTRY_DSN
+if (SENTRY_DSN) {
+  Sentry.init({
+    dsn: SENTRY_DSN,
+    environment: process.env.NEXT_PUBLIC_VERCEL_ENV ?? process.env.NODE_ENV,
+    tracesSampleRate: 0.1,
+    sendDefaultPii: false,
+  })
+}
+
+// Required for navigation instrumentation (no-op when Sentry isn't initialized).
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart
 
 const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY
 const POSTHOG_HOST =

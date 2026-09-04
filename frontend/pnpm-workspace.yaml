@@ -2,5 +2,7 @@ packages:
   - .
 
 allowBuilds:
+# sentry-cli binary is only used for source-map upload, which we don't do
+  '@sentry/cli': false
   core-js: false
   sharp: true

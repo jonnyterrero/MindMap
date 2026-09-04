@@ -58,6 +58,7 @@
     "@radix-ui/react-toggle": "1.1.1",
     "@radix-ui/react-toggle-group": "1.1.1",
     "@radix-ui/react-tooltip": "1.1.6",
+    "@sentry/nextjs": "^10.73.0",
     "@supabase/ssr": "^0.12.5",
     "@supabase/supabase-js": "^2.115.0",
     "@vercel/analytics": "2.0.1",

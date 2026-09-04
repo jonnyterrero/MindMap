@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase-server";
 import { revalidatePath } from "next/cache";
 import { detectCrisis, CRISIS_RESOURCES, type CrisisSeverity } from "@/lib/crisis-detection";
 import { analyzeVoiceTranscript } from "@/lib/voice-sentiment";
+import { consumeAiQuota } from "@/lib/ai-rate-limit";
 
 export type VoiceSaveResult =
   | { error: string }
@@ -60,13 +61,17 @@ export async function saveVoiceNote(
     crisis = { severity, eventId: (ev?.id as string) ?? null };
   }
 
-  // 3. Sentiment + themes (best-effort).
+  // 3. Sentiment + themes (best-effort; skipped silently once the daily
+  //    quota is spent — the note itself always saves).
   let sentiment: number | null = null;
   let themes: string[] = [];
   try {
-    const a = await analyzeVoiceTranscript(text);
-    sentiment = a.sentiment;
-    themes = a.themes;
+    const quotaCheck = await consumeAiQuota(supabase, "voice_sentiment");
+    if (quotaCheck.allowed) {
+      const a = await analyzeVoiceTranscript(text);
+      sentiment = a.sentiment;
+      themes = a.themes;
+    }
   } catch {
     // analysis is optional
   }
