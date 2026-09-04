@@ -2,6 +2,7 @@ import type React from "react";
 import { createClient } from "@/lib/supabase-server";
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
+import { NotificationsBootstrap } from "@/components/notifications-bootstrap";
 
 export default async function AppLayout({
   children,
@@ -46,6 +47,7 @@ export default async function AppLayout({
 
   return (
     <AppShell user={user} initialTheme={profile?.app_theme ?? null}>
+      <NotificationsBootstrap />
       {children}
     </AppShell>
   );

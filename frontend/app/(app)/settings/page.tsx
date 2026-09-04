@@ -8,15 +8,18 @@ import { ProviderSharing } from "./provider-sharing";
 import { DataPrivacy } from "./data-privacy";
 import { getMyRole, getMyGrants } from "@/app/(app)/provider/actions";
 import { getWearableSources, getRecentMetrics } from "./wearable-actions";
+import { getReminders } from "./reminder-actions";
+import { ReminderSettings } from "./reminder-settings";
 import { MedicalDisclaimer } from "@/components/medical-disclaimer";
 
 export default async function SettingsPage() {
-  const [profile, role, grants, sources, metrics] = await Promise.all([
+  const [profile, role, grants, sources, metrics, reminders] = await Promise.all([
     getProfile(),
     getMyRole(),
     getMyGrants(),
     getWearableSources(),
     getRecentMetrics(),
+    getReminders(),
   ]);
 
   return (
@@ -28,6 +31,7 @@ export default async function SettingsPage() {
         </p>
       </div>
       <SettingsForm profile={profile} />
+      <ReminderSettings reminders={reminders} />
       <AppearanceSettings />
       <WeatherSettings
         enabled={Boolean(profile?.weather_enabled)}
