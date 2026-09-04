@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signUp } from "@/app/login/actions";
 import { Brain } from "lucide-react";
@@ -50,7 +51,10 @@ export default function SignUpPage() {
           </div>
           <CardTitle className="text-2xl">Create Account</CardTitle>
           <CardDescription>
-            Start tracking your mental wellness journey
+            Start tracking your mental wellness journey.
+            <span className="mt-2 block text-xs text-muted-foreground">
+              MindMap is a self-tracking tool, not medical advice.
+            </span>
           </CardDescription>
         </CardHeader>
 
@@ -105,6 +109,23 @@ export default function SignUpPage() {
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Creating account…" : "Create Account"}
             </Button>
+
+            {/*
+              Legal notice at the point of consent: the four documents users
+              accept implicitly by creating an account are linked here, so the
+              agreement isn't a fiction. The explicit per-clause checkboxes are
+              on /consent, which the (app) layout redirects to on first sign-in.
+            */}
+            <p className="text-xs text-muted-foreground text-center leading-relaxed">
+              By creating an account, you agree to our{" "}
+              <Link href="/terms" className="underline hover:text-foreground">Terms</Link>
+              {" and "}
+              <Link href="/privacy" className="underline hover:text-foreground">Privacy Policy</Link>
+              , and acknowledge the{" "}
+              <Link href="/medical-disclaimer" className="underline hover:text-foreground">Medical Disclaimer</Link>
+              {" and "}
+              <Link href="/ai-disclosure" className="underline hover:text-foreground">AI Disclosure</Link>.
+            </p>
 
             <button
               type="button"

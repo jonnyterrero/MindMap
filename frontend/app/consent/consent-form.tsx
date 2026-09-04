@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type ReactNode } from "react";
+import Link from "next/link";
 import { grantConsent } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -8,32 +9,81 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Brain, Loader2, Shield } from "lucide-react";
 
+// Small helper so the description bodies can include real anchor tags without
+// interpolating raw href strings. `target="_blank"` keeps the consent form
+// state intact if the user opens a doc for reference.
+function DocLink({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <Link
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="font-medium underline underline-offset-2 hover:text-foreground"
+    >
+      {children}
+    </Link>
+  );
+}
+
 // IDs must match the CHECK constraint on consent_records.consent_type:
 //   terms_of_service | privacy_policy | data_sharing |
 //   analytics_collection | email_notifications | push_notifications
-const CONSENT_ITEMS = [
+// The medical disclaimer doesn't have its own consent_type (adding one would
+// need a migration, which the Phase 0/1 freeze avoids); it's acknowledged
+// alongside Terms of Service, whose description now links to it explicitly.
+const CONSENT_ITEMS: Array<{
+  id: string;
+  label: string;
+  description: ReactNode;
+  required: boolean;
+}> = [
   {
     id: "terms_of_service",
-    label: "Terms of Service",
-    description: "I agree to the MindMap Terms of Service and understand this is a wellness tracking tool.",
+    label: "Terms of Service and Medical Disclaimer",
+    description: (
+      <>
+        I agree to the <DocLink href="/terms">Terms of Service</DocLink> and
+        have read the <DocLink href="/medical-disclaimer">Medical Disclaimer</DocLink>.
+        I understand MindMap is a self-tracking tool and does not diagnose,
+        treat, or replace professional medical advice.
+      </>
+    ),
     required: true,
   },
   {
     id: "privacy_policy",
-    label: "Privacy Policy",
-    description: "I understand that my self-reported mental health data is stored securely and used only to provide personalized insights.",
+    label: "Privacy Policy and AI Disclosure",
+    description: (
+      <>
+        I&apos;ve read the <DocLink href="/privacy">Privacy Policy</DocLink> and
+        the <DocLink href="/ai-disclosure">AI Disclosure</DocLink>, and
+        understand that my self-reported data is stored securely and used only
+        to power my own insights.
+      </>
+    ),
     required: true,
   },
   {
     id: "data_sharing",
     label: "Data Sharing",
-    description: "I understand that my data is never shared without my explicit consent. I control who sees my data and can revoke access at any time.",
+    description: (
+      <>
+        I understand that my data is never shared without my explicit consent.
+        I control who sees my data and can revoke access at any time from{" "}
+        <DocLink href="/data-deletion">Settings</DocLink>.
+      </>
+    ),
     required: true,
   },
   {
     id: "analytics_collection",
     label: "Anonymous Analytics (optional)",
-    description: "I allow anonymized, aggregated usage data to improve the app. No personal health data is included.",
+    description: (
+      <>
+        I allow anonymized, aggregated usage data to improve the app. No
+        personal health data is included.
+      </>
+    ),
     required: false,
   },
 ];
@@ -90,7 +140,7 @@ export function ConsentForm() {
                 {item.label}
                 {item.required && <span className="text-destructive">*</span>}
               </Label>
-              <p className="text-xs text-muted-foreground">{item.description}</p>
+              <div className="text-xs text-muted-foreground leading-relaxed">{item.description}</div>
             </div>
           </div>
         ))}
