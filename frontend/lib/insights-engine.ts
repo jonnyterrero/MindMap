@@ -9,16 +9,42 @@ export type InsightResult = {
   recommendation: string | null;
 };
 
+/**
+ * Guardrail: minimum check-in days before an insight shows a scored rating.
+ * One noisy day must not produce a "high risk" banner in a health app —
+ * below the threshold the insight stays "unknown" with progress copy.
+ */
+export const INSIGHT_MIN_ENTRIES = {
+  migraine_risk: 5,
+  mood_trend: 5,
+} as const;
+
+function notEnoughData(
+  insight_type: keyof typeof INSIGHT_MIN_ENTRIES,
+  entryCount: number,
+): InsightResult {
+  const needed = INSIGHT_MIN_ENTRIES[insight_type];
+  const remaining = needed - entryCount;
+  return {
+    insight_type,
+    risk_level: "unknown",
+    score: 0,
+    reasons: [
+      entryCount === 0
+        ? "Not enough data"
+        : `${entryCount} of ${needed} check-in days logged`,
+    ],
+    signals: { entry_count: entryCount, min_entries: needed },
+    recommendation:
+      remaining > 0
+        ? `Log ${remaining} more day${remaining === 1 ? "" : "s"} of check-ins to unlock this insight.`
+        : "Log a few days of data to see predictions.",
+  };
+}
+
 export function computeMigraineRisk(entries: EntryRow[]): InsightResult {
-  if (entries.length === 0) {
-    return {
-      insight_type: "migraine_risk",
-      risk_level: "unknown",
-      score: 0,
-      reasons: ["Not enough data"],
-      signals: {},
-      recommendation: "Log a few days of data to see predictions.",
-    };
+  if (entries.length < INSIGHT_MIN_ENTRIES.migraine_risk) {
+    return notEnoughData("migraine_risk", entries.length);
   }
 
   const reasons: string[] = [];
@@ -100,15 +126,8 @@ export function computeMigraineRisk(entries: EntryRow[]): InsightResult {
 }
 
 export function computeMoodTrend(entries: EntryRow[]): InsightResult {
-  if (entries.length < 3) {
-    return {
-      insight_type: "mood_trend",
-      risk_level: "unknown",
-      score: 0,
-      reasons: ["Need at least 3 days of data"],
-      signals: {},
-      recommendation: "Keep logging daily.",
-    };
+  if (entries.length < INSIGHT_MIN_ENTRIES.mood_trend) {
+    return notEnoughData("mood_trend", entries.length);
   }
 
   const recent = entries.slice(0, 7);

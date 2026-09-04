@@ -12,6 +12,7 @@ export const AnalyticsEvent = {
   JournalCreated: "journal_created",
   CompanionStarted: "companion_started",
   InsightsGenerated: "insights_generated",
+  InsightFeedback: "insight_feedback",
   ReportGenerated: "report_generated",
   PwaInstallAccepted: "pwa_install_accepted",
   PwaInstallDismissed: "pwa_install_dismissed",

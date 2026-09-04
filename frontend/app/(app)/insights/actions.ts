@@ -150,7 +150,14 @@ export async function getCorrelations(): Promise<Correlation[]> {
   return computeCorrelations(merged);
 }
 
-export async function getInsightHistory(insightType: string) {
+export type InsightHistoryPoint = {
+  score: number | null;
+  risk_level: string;
+  computed_at: string;
+  reasons: string[];
+};
+
+export async function getInsightHistory(insightType: string): Promise<InsightHistoryPoint[]> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
@@ -163,5 +170,50 @@ export async function getInsightHistory(insightType: string) {
     .order("computed_at", { ascending: false })
     .limit(30);
 
-  return data ?? [];
+  return (data as InsightHistoryPoint[] | null) ?? [];
+}
+
+/** Thumbs up/down on a generated insight; re-voting updates the row. */
+export async function submitInsightFeedback(
+  insightId: string,
+  insightType: string,
+  helpful: boolean,
+): Promise<{ error: string } | { success: true }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { error } = await supabase.from("mindmap_insight_feedback").upsert(
+    {
+      user_id: user.id,
+      insight_id: insightId,
+      insight_type: insightType,
+      helpful,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id,insight_id" },
+  );
+  if (error) return { error: error.message };
+
+  await captureServerEvent(user.id, AnalyticsEvent.InsightFeedback, {
+    insight_type: insightType,
+    helpful,
+  });
+  return { success: true };
+}
+
+/** The caller's existing feedback, keyed by insight id (for initial UI state). */
+export async function getMyInsightFeedback(): Promise<Record<string, boolean>> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return {};
+
+  const { data } = await supabase
+    .from("mindmap_insight_feedback")
+    .select("insight_id, helpful")
+    .eq("user_id", user.id);
+
+  const map: Record<string, boolean> = {};
+  for (const row of data ?? []) map[row.insight_id as string] = row.helpful as boolean;
+  return map;
 }

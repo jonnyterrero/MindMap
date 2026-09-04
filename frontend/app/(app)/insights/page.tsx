@@ -1,4 +1,4 @@
-import { getLatestInsights, getCorrelations } from "./actions";
+import { getLatestInsights, getCorrelations, getMyInsightFeedback } from "./actions";
 import { getLatestPredictions } from "./prediction-actions";
 import { getLatestClinicianSummary } from "./summary-actions";
 import { InsightsView } from "./insights-view";
@@ -7,11 +7,12 @@ import { PredictionsSection } from "./predictions-section";
 import { ClinicianSummarySection } from "./clinician-summary-section";
 
 export default async function InsightsPage() {
-  const [insights, correlations, predictions, summary] = await Promise.all([
+  const [insights, correlations, predictions, summary, feedback] = await Promise.all([
     getLatestInsights(),
     getCorrelations(),
     getLatestPredictions(),
     getLatestClinicianSummary(),
+    getMyInsightFeedback(),
   ]);
 
   return (
@@ -26,7 +27,7 @@ export default async function InsightsPage() {
       <ClinicianSummarySection summary={summary} />
       <PredictionsSection initial={predictions} />
       <CorrelationsCard correlations={correlations} />
-      <InsightsView insights={insights} />
+      <InsightsView insights={insights} initialFeedback={feedback} />
     </div>
   );
 }
