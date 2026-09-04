@@ -48,6 +48,9 @@ export type MyGrant = {
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/** Shape returned by the rpc_provider_get_patient_profiles RPC (migration 023). */
+type PatientProfileRow = { id: string; display_name: string | null };
+
 export async function getMyRole(): Promise<"patient" | "provider"> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -81,14 +84,17 @@ export async function getMyPatients(): Promise<PatientSummary[]> {
   if (!grants || grants.length === 0) return [];
 
   const ids = grants.map((g) => g.patient_user_id as string);
-  // These reads succeed via the provider-read RLS policies (017).
+  // Predictions and reports come via the provider-read RLS policies (017).
+  // Names come via a SECURITY DEFINER RPC (023): the old profiles policy
+  // could not restrict columns and exposed the patient's home coordinates.
   const [profilesRes, predsRes, reportsRes] = await Promise.all([
-    supabase.from("profiles").select("id, display_name").in("id", ids),
+    supabase.rpc("rpc_provider_get_patient_profiles", { p_patient_ids: ids }),
     supabase.from("mindmap_predictions").select("user_id, risk_level, predicted_at").in("user_id", ids).order("predicted_at", { ascending: false }),
     supabase.from("mindmap_ai_reports").select("user_id, report_type, period_end").in("user_id", ids).order("period_end", { ascending: false }),
   ]);
 
-  const nameById = new Map((profilesRes.data ?? []).map((p) => [p.id as string, p.display_name as string | null]));
+  const patientProfiles = (profilesRes.data as PatientProfileRow[] | null) ?? [];
+  const nameById = new Map(patientProfiles.map((p) => [p.id, p.display_name]));
   const riskById = new Map<string, string>();
   for (const r of predsRes.data ?? []) if (!riskById.has(r.user_id as string)) riskById.set(r.user_id as string, r.risk_level as string);
   const reportById = new Map<string, string>();
@@ -121,7 +127,11 @@ export async function getPatientSummary(
   if (!grant) return { error: "You don't have access to this patient." };
 
   const perms = grant.permissions as ProviderPermissions;
-  const profileRes = await supabase.from("profiles").select("display_name").eq("id", patientUserId).maybeSingle();
+  // Name via the provider-safe RPC (023) — see getMyPatients above.
+  const profileRes = await supabase.rpc("rpc_provider_get_patient_profiles", {
+    p_patient_ids: [patientUserId],
+  });
+  const patientProfile = (profileRes.data as PatientProfileRow[] | null)?.[0];
 
   let predictions: PatientPrediction[] = [];
   let reports: PatientReport[] = [];
@@ -156,7 +166,7 @@ export async function getPatientSummary(
   }
 
   return {
-    name: (profileRes.data?.display_name as string | null) || "Patient",
+    name: patientProfile?.display_name || "Patient",
     permissions: perms,
     predictions,
     reports,
