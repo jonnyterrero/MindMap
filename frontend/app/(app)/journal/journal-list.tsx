@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   createJournalEntry,
+  updateJournalEntry,
   deleteJournalEntry,
   reflectOnJournalEntry,
   type JournalPayload,
@@ -27,7 +28,7 @@ import {
 import { MedicalDisclaimer } from "@/components/medical-disclaimer";
 import { CrisisResourcesSheet } from "@/components/crisis-resources-sheet";
 import type { CrisisSeverity } from "@/lib/crisis-detection";
-import { Plus, Trash2, Loader2, BookOpen, Lock, Globe, Sparkles, MessageCircle } from "lucide-react";
+import { Plus, Trash2, Loader2, BookOpen, Lock, Globe, Sparkles, MessageCircle, Pencil, Save, X } from "lucide-react";
 import { format, parseISO } from "date-fns";
 
 type Entry = Record<string, unknown>;
@@ -59,6 +60,16 @@ export function JournalList({
   );
   const [reflectingId, setReflectingId] = useState<string | null>(null);
   const [reflectErrors, setReflectErrors] = useState<Record<string, string>>({});
+
+  // In-place editor state. `editingId` gates rendering; the draft mirrors the
+  // subset of JournalPayload fields the user can change (entry_date is not
+  // editable -- history should not silently shift on a save).
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editContent, setEditContent] = useState("");
+  const [editMoodTags, setEditMoodTags] = useState<string[]>([]);
+  const [editPrivate, setEditPrivate] = useState(true);
+  const [editErr, setEditErr] = useState<string | null>(null);
   const [crisis, setCrisis] = useState<{ severity: CrisisSeverity; eventId: string | null } | null>(null);
   const router = useRouter();
   const [talkingId, setTalkingId] = useState<string | null>(null);
@@ -141,6 +152,65 @@ export function JournalList({
     setEntries((prev) => prev.filter((e) => e.id !== id));
     startTransition(async () => {
       await deleteJournalEntry(id);
+    });
+  }
+
+  function startEdit(entry: Entry) {
+    setEditingId(entry.id as string);
+    setEditTitle((entry.title as string) ?? "");
+    setEditContent((entry.content as string) ?? "");
+    setEditMoodTags(((entry.mood_tags as string[]) ?? []).slice());
+    setEditPrivate((entry.is_private as boolean) ?? true);
+    setEditErr(null);
+  }
+
+  function toggleEditTag(tag: string) {
+    setEditMoodTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditErr(null);
+  }
+
+  function saveEdit() {
+    if (!editingId) return;
+    const id = editingId;
+    const trimmed = editContent.trim();
+    if (!trimmed) {
+      // Guard: an entry can be created without a title, but never without
+      // content -- an empty save would leave a blank row. Mirrors handleCreate.
+      setEditErr("Content can't be empty.");
+      return;
+    }
+
+    const payload: Partial<JournalPayload> = {
+      title: editTitle.trim() || null,
+      content: trimmed,
+      mood_tags: editMoodTags,
+      is_private: editPrivate,
+    };
+
+    // Optimistic patch: apply locally so the row updates without waiting for
+    // the round-trip. On failure the setEditErr branch keeps the user in the
+    // editor with their draft intact.
+    setEntries((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, ...payload } : e))
+    );
+    setEditingId(null);
+
+    startTransition(async () => {
+      const res = await updateJournalEntry(id, payload);
+      // The action's return type is `{ error: string } | { success: true }`
+      // but TS narrows `"error" in res` to `string | undefined` because both
+      // members exist in the union shape; check the value itself to satisfy
+      // the setter's `string | null` type.
+      if (res && "error" in res && res.error) {
+        setEditErr(res.error);
+        setEditingId(id);
+      }
     });
   }
 
@@ -229,33 +299,109 @@ export function JournalList({
         </p>
       ) : (
         <div className="space-y-3">
-          {entries.map((entry) => (
-            <Card key={entry.id as string} className="glass-card">
+          {entries.map((entry) => {
+            const entryId = entry.id as string;
+            const isEditing = editingId === entryId;
+            const isTemp = entryId.startsWith("temp-");
+            return (
+            <Card key={entryId} className="glass-card">
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between">
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <CardTitle className="text-base flex items-center gap-2">
                       <BookOpen className="h-4 w-4 text-primary" />
-                      {(entry.title as string) || "Untitled"}
-                      {(entry.is_private as boolean) && (
-                        <Lock className="h-3 w-3 text-muted-foreground" />
+                      {isEditing ? (
+                        <Input
+                          value={editTitle}
+                          onChange={(e) => setEditTitle(e.target.value)}
+                          placeholder="Title (optional)"
+                          aria-label="Entry title"
+                          className="h-8"
+                        />
+                      ) : (
+                        <>
+                          {(entry.title as string) || "Untitled"}
+                          {(entry.is_private as boolean) && (
+                            <Lock className="h-3 w-3 text-muted-foreground" />
+                          )}
+                        </>
                       )}
                     </CardTitle>
                     <CardDescription>
                       {format(parseISO(entry.entry_date as string), "EEEE, MMMM d, yyyy")}
                     </CardDescription>
                   </div>
+                  {!isEditing && !isTemp && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => startEdit(entry)}
+                      disabled={isPending}
+                      aria-label="Edit entry"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  )}
                   <Button
                     size="icon"
                     variant="ghost"
-                    onClick={() => handleDelete(entry.id as string)}
-                    disabled={isPending}
+                    onClick={() => handleDelete(entryId)}
+                    disabled={isPending || isEditing}
+                    aria-label="Delete entry"
                   >
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </div>
               </CardHeader>
               <CardContent>
+                {isEditing ? (
+                  <div className="space-y-3">
+                    <Textarea
+                      value={editContent}
+                      onChange={(e) => setEditContent(e.target.value)}
+                      rows={6}
+                      aria-label="Entry content"
+                    />
+                    <div className="flex flex-wrap gap-2">
+                      {MOOD_TAG_OPTIONS.map((tag) => (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => toggleEditTag(tag)}
+                          className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                            editMoodTags.includes(tag)
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted text-muted-foreground hover:bg-muted/80"
+                          }`}
+                        >
+                          {tag}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor={`private-${entryId}`} className="flex items-center gap-2">
+                        {editPrivate ? <Lock className="h-4 w-4" /> : <Globe className="h-4 w-4" />}
+                        {editPrivate ? "Private" : "Shareable"}
+                      </Label>
+                      <Switch
+                        id={`private-${entryId}`}
+                        checked={editPrivate}
+                        onCheckedChange={setEditPrivate}
+                      />
+                    </div>
+                    {editErr && <p className="text-sm text-destructive">{editErr}</p>}
+                    <div className="flex gap-2">
+                      <Button onClick={saveEdit} disabled={isPending || !editContent.trim()}>
+                        {isPending ? <Loader2 className="animate-spin" /> : <Save className="h-4 w-4" />}
+                        Save
+                      </Button>
+                      <Button variant="ghost" onClick={cancelEdit} disabled={isPending}>
+                        <X className="h-4 w-4" /> Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
                 <p className="text-sm whitespace-pre-wrap">{entry.content as string}</p>
                 {(entry.mood_tags as string[])?.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-3">
@@ -270,14 +416,14 @@ export function JournalList({
                   </div>
                 )}
 
-                {!(entry.id as string).startsWith("temp-") && (
+                {!isTemp && (
                   <button
                     type="button"
-                    onClick={() => talkAboutEntry(entry.id as string)}
-                    disabled={talkingId === (entry.id as string)}
+                    onClick={() => talkAboutEntry(entryId)}
+                    disabled={talkingId === entryId}
                     className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
                   >
-                    {talkingId === (entry.id as string) ? (
+                    {talkingId === entryId ? (
                       <Loader2 className="h-3 w-3 animate-spin" />
                     ) : (
                       <MessageCircle className="h-3 w-3" />
@@ -286,7 +432,7 @@ export function JournalList({
                   </button>
                 )}
 
-                {aiEnabled && !(entry.id as string).startsWith("temp-") && (
+                {aiEnabled && !isTemp && (
                   <div className="mt-4 border-t pt-3">
                     {analysisMap[entry.id as string] ? (
                       <div className="space-y-2 rounded-lg bg-muted/50 p-3">
@@ -337,9 +483,12 @@ export function JournalList({
                     )}
                   </div>
                 )}
+                  </>
+                )}
               </CardContent>
             </Card>
-          ))}
+            );
+          })}
         </div>
       )}
 
