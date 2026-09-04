@@ -43,6 +43,36 @@ jobs:
       - name: Unit tests (engines)
         run: pnpm test
 
+  ml:
+    name: ML (pytest, ruff, mypy)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ml
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: ml/uv.lock
+
+      # --locked fails if uv.lock has drifted from pyproject.toml, mirroring
+      # the frontend's pnpm --frozen-lockfile. Installs the dev group too,
+      # which is where pytest / ruff / mypy live.
+      - name: Install (locked)
+        run: uv sync --locked
+
+      - name: Tests
+        run: uv run pytest
+
+      - name: Lint (ruff)
+        run: uv run ruff check .
+
+      - name: Types (mypy)
+        run: uv run mypy
+
   e2e:
     name: E2E (Playwright smoke)
     runs-on: ubuntu-latest
