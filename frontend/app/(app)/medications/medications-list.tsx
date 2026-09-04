@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import {
   createMedSchedule,
   toggleMedActive,
+  updateMedSchedule,
   deleteMedSchedule,
   type MedSchedulePayload,
 } from "./actions";
@@ -24,7 +25,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Plus, Trash2, Loader2, Pill, Clock } from "lucide-react";
+import { Plus, Trash2, Loader2, Pill, Clock, Pencil, Save, X } from "lucide-react";
 
 type Schedule = Record<string, unknown>;
 
@@ -40,6 +41,16 @@ export function MedicationsList({ schedules: initialSchedules }: { schedules: Sc
   const [frequency, setFrequency] = useState("Daily");
   const [reminderTime, setReminderTime] = useState("08:00");
   const [notes, setNotes] = useState("");
+
+  // Per-row inline edit state. When editingId is set, the row is replaced by
+  // the same form the "Add" card uses, populated from the row's current values.
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editDosage, setEditDosage] = useState("");
+  const [editDoseMg, setEditDoseMg] = useState("");
+  const [editFrequency, setEditFrequency] = useState("Daily");
+  const [editReminderTime, setEditReminderTime] = useState("08:00");
+  const [editErr, setEditErr] = useState<string | null>(null);
 
   function resetForm() {
     setName("");
@@ -91,6 +102,48 @@ export function MedicationsList({ schedules: initialSchedules }: { schedules: Sc
     setSchedules((prev) => prev.filter((m) => m.id !== id));
     startTransition(async () => {
       await deleteMedSchedule(id);
+    });
+  }
+
+  function startEdit(med: Schedule) {
+    setEditingId(med.id as string);
+    setEditName((med.name as string) ?? "");
+    setEditDosage((med.dosage as string) ?? "");
+    setEditDoseMg(med.dose_mg == null ? "" : String(med.dose_mg));
+    setEditFrequency((med.frequency as string) ?? "Daily");
+    setEditReminderTime((med.reminder_time as string) ?? "08:00");
+    setEditErr(null);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditErr(null);
+  }
+
+  function saveEdit() {
+    if (!editingId) return;
+    if (!editName.trim()) {
+      setEditErr("Name can't be empty.");
+      return;
+    }
+    const id = editingId;
+    const patch: Partial<MedSchedulePayload> = {
+      name: editName.trim(),
+      dosage: editDosage.trim() || null,
+      dose_mg: editDoseMg ? Number(editDoseMg) : null,
+      frequency: editFrequency,
+      reminder_time: editReminderTime || null,
+    };
+
+    setSchedules((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m)));
+    setEditingId(null);
+
+    startTransition(async () => {
+      const res = await updateMedSchedule(id, patch);
+      if (res && "error" in res && res.error) {
+        setEditErr(res.error);
+        setEditingId(id);
+      }
     });
   }
 
@@ -179,13 +232,78 @@ export function MedicationsList({ schedules: initialSchedules }: { schedules: Sc
         </p>
       ) : (
         <div className="space-y-2">
-          {schedules.map((med) => (
-            <Card key={med.id as string} className="glass-card">
+          {schedules.map((med) => {
+            const medId = med.id as string;
+            const isEditing = editingId === medId;
+            const isTemp = medId.startsWith("temp-");
+            return (
+            <Card key={medId} className="glass-card">
+              {isEditing ? (
+                <CardContent className="space-y-4 py-4 px-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Name</Label>
+                      <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Dosage</Label>
+                      <Input
+                        placeholder="e.g. 50mg"
+                        value={editDosage}
+                        onChange={(e) => setEditDosage(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label>Dose (mg)</Label>
+                      <Input
+                        type="number"
+                        value={editDoseMg}
+                        onChange={(e) => setEditDoseMg(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Frequency</Label>
+                      <Select value={editFrequency} onValueChange={setEditFrequency}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {FREQUENCIES.map((f) => (
+                            <SelectItem key={f} value={f}>
+                              {f}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Reminder time</Label>
+                      <Input
+                        type="time"
+                        value={editReminderTime}
+                        onChange={(e) => setEditReminderTime(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  {editErr && <p className="text-sm text-destructive">{editErr}</p>}
+                  <div className="flex gap-2">
+                    <Button onClick={saveEdit} disabled={isPending || !editName.trim()}>
+                      {isPending ? <Loader2 className="animate-spin" /> : <Save className="h-4 w-4" />}
+                      Save
+                    </Button>
+                    <Button variant="ghost" onClick={cancelEdit} disabled={isPending}>
+                      <X className="h-4 w-4" /> Cancel
+                    </Button>
+                  </div>
+                </CardContent>
+              ) : (
               <CardContent className="flex items-center gap-4 py-4 px-4">
                 <Switch
                   checked={med.is_active as boolean}
                   onCheckedChange={() =>
-                    handleToggle(med.id as string, med.is_active as boolean)
+                    handleToggle(medId, med.is_active as boolean)
                   }
                   disabled={isPending}
                 />
@@ -218,17 +336,31 @@ export function MedicationsList({ schedules: initialSchedules }: { schedules: Sc
                   </div>
                 </div>
 
+                {!isTemp && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => startEdit(med)}
+                    disabled={isPending}
+                    aria-label={`Edit ${med.name as string}`}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                )}
                 <Button
                   size="icon"
                   variant="ghost"
-                  onClick={() => handleDelete(med.id as string)}
+                  onClick={() => handleDelete(medId)}
                   disabled={isPending}
+                  aria-label={`Delete ${med.name as string}`}
                 >
                   <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>
               </CardContent>
+              )}
             </Card>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

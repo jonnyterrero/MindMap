@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { createGoal, toggleGoalComplete, deleteGoal, type GoalPayload } from "./actions";
+import { createGoal, toggleGoalComplete, updateGoalProgress, deleteGoal, type GoalPayload } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,7 +14,7 @@ import {
 import {
   Card, CardContent, CardHeader, CardTitle,
 } from "@/components/ui/card";
-import { Plus, Trash2, Loader2, Target } from "lucide-react";
+import { Plus, Trash2, Loader2, Target, Check, Pencil, X } from "lucide-react";
 
 type Goal = Record<string, unknown>;
 
@@ -24,6 +24,10 @@ export function GoalsList({ goals: initialGoals }: { goals: Goal[] }) {
   const [isPending, startTransition] = useTransition();
   const [goals, setGoals] = useState(initialGoals);
   const [showNew, setShowNew] = useState(false);
+  // Per-goal inline progress editor state. null when idle; the string draft is
+  // kept in state so the user can clear the field mid-edit without the number
+  // input rejecting the input event.
+  const [progressEdit, setProgressEdit] = useState<{ id: string; draft: string } | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("Other");
@@ -77,6 +81,20 @@ export function GoalsList({ goals: initialGoals }: { goals: Goal[] }) {
     setGoals((prev) => prev.filter((g) => g.id !== id));
     startTransition(async () => {
       await deleteGoal(id);
+    });
+  }
+
+  function saveProgress() {
+    if (!progressEdit) return;
+    // Empty or unparseable input clears the field silently rather than saving
+    // a NaN. Negative values are clamped to zero.
+    const parsed = Number(progressEdit.draft);
+    const next = Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+    const id = progressEdit.id;
+    setGoals((prev) => prev.map((g) => (g.id === id ? { ...g, current_value: next } : g)));
+    setProgressEdit(null);
+    startTransition(async () => {
+      await updateGoalProgress(id, next);
     });
   }
 
@@ -168,9 +186,68 @@ export function GoalsList({ goals: initialGoals }: { goals: Goal[] }) {
                     )}
                     {target && (
                       <div className="space-y-1">
-                        <div className="flex justify-between text-xs text-muted-foreground">
-                          <span>{current ?? 0} / {target} {goal.unit as string ?? ""}</span>
-                          <span>{Math.round(pct)}%</span>
+                        <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                          {progressEdit?.id === (goal.id as string) ? (
+                            <div className="flex items-center gap-1">
+                              <Input
+                                type="number"
+                                inputMode="decimal"
+                                min={0}
+                                step="any"
+                                value={progressEdit.draft}
+                                onChange={(e) =>
+                                  setProgressEdit({ id: goal.id as string, draft: e.target.value })
+                                }
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") saveProgress();
+                                  if (e.key === "Escape") setProgressEdit(null);
+                                }}
+                                autoFocus
+                                aria-label={`Progress toward ${goal.title as string}`}
+                                className="h-7 w-20 text-xs"
+                              />
+                              <span>/ {target} {(goal.unit as string) ?? ""}</span>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={saveProgress}
+                                disabled={isPending}
+                                aria-label="Save progress"
+                                className="h-7 w-7"
+                              >
+                                <Check className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => setProgressEdit(null)}
+                                aria-label="Cancel"
+                                className="h-7 w-7"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setProgressEdit({
+                                    id: goal.id as string,
+                                    draft: String(current ?? 0),
+                                  })
+                                }
+                                className="inline-flex items-center gap-1 rounded hover:text-foreground focus:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                                aria-label={`Edit progress for ${goal.title as string}`}
+                              >
+                                <span>
+                                  {current ?? 0} / {target} {(goal.unit as string) ?? ""}
+                                </span>
+                                <Pencil className="h-3 w-3 opacity-60" />
+                              </button>
+                              <span>{Math.round(pct)}%</span>
+                            </>
+                          )}
                         </div>
                         <Progress value={pct} className="h-1.5" />
                       </div>
