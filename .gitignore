@@ -61,6 +61,9 @@ __pycache__/
 # unanchored, it also swallowed the app's `mindmap/` route on case-insensitive
 # filesystems (macOS/Windows).
 /MindMap/
+# Retired OneDrive snapshot: a full second copy of the repo (its own
+# frontend/, backend/, supabase/). Local archive only, never committed.
+/MindMap_onedrive_retired_20260625/
 
 # Capacitor native projects (regenerate via cap add + cap sync)
 frontend/ios/
