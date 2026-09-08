@@ -34,9 +34,10 @@ test.describe("public auth routes", () => {
     await expect(page.getByText("Welcome Back")).toBeVisible();
   });
 
-  test("root path redirects unauthenticated users to login", async ({ page }) => {
+  test("root path is the public marketing page", async ({ page }) => {
     await page.goto("/");
 
-    await expect(page).toHaveURL(/\/login$/);
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.getByRole("link", { name: /log in|sign in/i }).first()).toBeVisible();
   });
 });
