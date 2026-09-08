@@ -6,8 +6,8 @@ name: ML mindmap graph batch (daily)
 #
 # Inert until repository secrets are set (Settings -> Secrets and variables ->
 # Actions -> Secrets):
-#   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY   (required)
-#   ANTHROPIC_API_KEY                          (optional: enables the LLM
+#   SUPABASE_URL (or MINDMAP_SUPABASE_URL), SUPABASE_SERVICE_ROLE_KEY
+#   ANTHROPIC_API_KEY (or ANTH_ML_ACTIONS_KEY)  (optional: enables the LLM
 #                                               extractor + grounder; without it
 #                                               the batch runs the rule-skeleton
 #                                               fallback)
@@ -34,7 +34,7 @@ jobs:
         id: guard
         env:
           KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          LLM: ${{ secrets.ANTHROPIC_API_KEY }}
+          LLM: ${{ secrets.ANTHROPIC_API_KEY || secrets.ANTH_ML_ACTIONS_KEY }}
         run: |
           if [ -n "$KEY" ]; then
             echo "run=true" >> "$GITHUB_OUTPUT"
@@ -54,9 +54,9 @@ jobs:
         if: steps.guard.outputs.run == 'true'
         working-directory: ml
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL || secrets.MINDMAP_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY || secrets.ANTH_ML_ACTIONS_KEY }}
         run: |
           uv sync
           uv pip install supabase anthropic

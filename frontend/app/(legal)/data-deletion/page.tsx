@@ -18,21 +18,19 @@ export default function DataDeletionPage() {
       <ol>
         <li>
           Sign in and open{" "}
-          <a href="/settings">Settings → Privacy &amp; Data</a>.
+          <a href="/settings">Settings → Your data &amp; privacy</a>.
         </li>
         <li>
-          Choose <strong>Request Account Deletion</strong>, or pick a
-          narrower scope (entries, journal, medications, routines,
-          therapy sessions, goals, or exports).
+          Optionally export a JSON copy of your data first.
         </li>
         <li>
-          Confirm the request from the confirmation email we send to
-          your account address.
+          Choose <strong>Delete account</strong>, type{" "}
+          <span className="font-mono">DELETE</span>, and confirm.
         </li>
         <li>
-          We soft-delete immediately and hard-delete after our standard
-          retention window. Provider shares are revoked at submission
-          time.
+          Deletion is immediate and irreversible. The auth user and all
+          associated health data are removed in the same request.
+          Provider shares die with the account.
         </li>
       </ol>
 

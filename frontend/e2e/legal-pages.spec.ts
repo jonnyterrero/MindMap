@@ -5,6 +5,7 @@ const publicLegalPages = [
   { path: "/terms", heading: "Terms of Service" },
   { path: "/medical-disclaimer", heading: "Medical Disclaimer" },
   { path: "/support", heading: "Support" },
+  { path: "/data-deletion", heading: "Data Deletion" },
 ] as const;
 
 test.describe("public legal pages", () => {

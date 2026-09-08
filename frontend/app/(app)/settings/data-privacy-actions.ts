@@ -53,9 +53,10 @@ export async function exportUserData(): Promise<{ error: string } | { bundle: Ex
 }
 
 /**
- * Hard-delete the caller's account. Removes the auth user (most data cascades
- * via ON DELETE CASCADE FKs) using the service role. Requires the typed
- * "DELETE" confirmation. Irreversible.
+ * Hard-delete the caller's account. PHI child tables cascade via FKs
+ * (migration 026). The data_deletion_requests audit row survives with
+ * user_id nulled and retained_metadata.deleted_user_id set. Requires the
+ * typed "DELETE" confirmation. Irreversible.
  */
 export async function deleteAccount(
   confirmation: string,
@@ -72,15 +73,21 @@ export async function deleteAccount(
     return { error: "Account deletion isn't configured on the server (missing service role key)." };
   }
 
-  // Audit trail before removal.
-  await supabase.from("data_deletion_requests").insert({
-    user_id: user.id,
-    scope: "all",
-    status: "processing",
-    reason: "User-initiated account deletion",
-  });
-
   const admin = await createServiceClient();
+
+  const { data: request, error: requestErr } = await admin
+    .from("data_deletion_requests")
+    .insert({
+      user_id: user.id,
+      scope: "all",
+      status: "processing",
+      reason: "User-initiated account deletion",
+      retained_metadata: { deleted_user_id: user.id },
+    })
+    .select("id")
+    .single();
+  if (requestErr) return { error: requestErr.message };
+
   // Best-effort storage cleanup (buckets may not exist yet).
   try {
     await admin.storage.from("voice-notes").remove([`${user.id}/`]);
@@ -89,7 +96,26 @@ export async function deleteAccount(
   }
 
   const { error } = await admin.auth.admin.deleteUser(user.id);
-  if (error) return { error: error.message };
+  if (error) {
+    await admin
+      .from("data_deletion_requests")
+      .update({
+        status: "cancelled",
+        failure_reason: error.message,
+      })
+      .eq("id", request.id);
+    return { error: error.message };
+  }
+
+  await admin
+    .from("data_deletion_requests")
+    .update({
+      status: "completed",
+      processed_at: new Date().toISOString(),
+      completed_at: new Date().toISOString(),
+      processed_by: "deleteAccount",
+    })
+    .eq("id", request.id);
 
   await supabase.auth.signOut();
   return { success: true };
