@@ -4,13 +4,13 @@ name: ML mindmap graph batch (daily)
 # builds a verified concept graph per entry, and upserts mindmap_graphs (the app
 # only reads them). Python batch -> GitHub Action, NOT a Vercel cron.
 #
-# Inert until repository secrets are set (Settings -> Secrets and variables ->
-# Actions -> Secrets):
-#   SUPABASE_URL (or MINDMAP_SUPABASE_URL), SUPABASE_SERVICE_ROLE_KEY
-#   ANTHROPIC_API_KEY (or ANTH_ML_ACTIONS_KEY)  (optional: enables the LLM
-#                                               extractor + grounder; without it
-#                                               the batch runs the rule-skeleton
-#                                               fallback)
+# The project URL is public and hardcoded below. Do not store it as a secret.
+#
+# Required repository secret:
+#   SUPABASE_SERVICE_ROLE_KEY  — Supabase Secret API key (sb_secret_...)
+# Optional:
+#   ANTHROPIC_API_KEY or ANTH_ML_ACTIONS_KEY — enables the LLM extractor;
+#   without it the batch runs the rule-skeleton fallback
 # Idempotent (upsert on user_id+source_table+source_id+pipeline_version) and
 # content_sha-skips unchanged entries, so re-runs are cheap.
 
@@ -27,22 +27,48 @@ jobs:
   graph:
     name: Build & upsert verified mindmaps
     runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: https://zunpccwjghwpiljwwjpv.supabase.co
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check secrets (skip if unset)
+      - name: Check secrets
         id: guard
         env:
           KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           LLM: ${{ secrets.ANTHROPIC_API_KEY || secrets.ANTH_ML_ACTIONS_KEY }}
         run: |
-          if [ -n "$KEY" ]; then
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          else
+          set -euo pipefail
+          KEY="$(printf '%s' "${KEY:-}" | tr -d '\r\n[:space:]')"
+          if [ -z "$KEY" ]; then
             echo "SUPABASE_SERVICE_ROLE_KEY not set — skipping (inert until configured)."
             echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "llm=" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
-          if [ -n "$LLM" ]; then echo "llm=--llm" >> "$GITHUB_OUTPUT"; else echo "llm=" >> "$GITHUB_OUTPUT"; fi
+          case "$KEY" in
+            eyJ*)
+              echo "::error::SUPABASE_SERVICE_ROLE_KEY is a legacy JWT (starts with eyJ). Those keys are disabled on this project. In GitHub → Settings → Secrets → Actions, Update SUPABASE_SERVICE_ROLE_KEY with a Secret API key from Supabase → Project Settings → API Keys (it starts with sb_secret_)."
+              exit 1
+              ;;
+            sb_publishable*)
+              echo "::error::SUPABASE_SERVICE_ROLE_KEY is a publishable/anon key. GitHub Actions needs a Secret key (sb_secret_)."
+              exit 1
+              ;;
+            http://*|https://*)
+              echo "::error::SUPABASE_SERVICE_ROLE_KEY looks like a URL. Paste the secret key, not the project URL. The URL is already hardcoded in this workflow."
+              exit 1
+              ;;
+            sb_secret*)
+              echo "key_kind=sb_secret" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "::warning::Key does not start with sb_secret_. If the job fails with Unregistered API key, replace it with a new Secret API key from the Supabase dashboard."
+              echo "key_kind=other" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+          echo "run=true" >> "$GITHUB_OUTPUT"
+          if [ -n "${LLM:-}" ]; then echo "llm=--llm" >> "$GITHUB_OUTPUT"; else echo "llm=" >> "$GITHUB_OUTPUT"; fi
 
       - name: Setup uv
         if: steps.guard.outputs.run == 'true'
@@ -54,10 +80,10 @@ jobs:
         if: steps.guard.outputs.run == 'true'
         working-directory: ml
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL || secrets.MINDMAP_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY || secrets.ANTH_ML_ACTIONS_KEY }}
         run: |
+          export SUPABASE_SERVICE_ROLE_KEY="$(printf '%s' "$SUPABASE_SERVICE_ROLE_KEY" | tr -d '\r\n[:space:]')"
           uv sync
           uv pip install supabase anthropic
           uv run python -m mindmap_ml.serving.graph_batch ${{ steps.guard.outputs.llm }}
