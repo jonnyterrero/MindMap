@@ -36,10 +36,18 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 2. API routes get no blanket exemption: every /api/** request falls through
-  //    to the session check below and returns 401 JSON (not an HTML redirect)
-  //    when unauthenticated. Supabase's email/OAuth callbacks live under
-  //    /auth/** (see /auth/confirm in PUBLIC_ROUTES), never under /api/auth.
+  // 1c. Vercel Cron has no Supabase session cookie — only CRON_SECRET.
+  //     Let /api/cron/* reach the route; the handler still 401s without
+  //     a matching Bearer token. Without this, Monday's job never runs.
+  if (pathname.startsWith("/api/cron/")) {
+    return NextResponse.next();
+  }
+
+  // 2. Other API routes get no blanket exemption: every remaining /api/**
+  //    request falls through to the session check and returns 401 JSON
+  //    (not an HTML redirect) when unauthenticated. Supabase's email/OAuth
+  //    callbacks live under /auth/** (see /auth/confirm in PUBLIC_ROUTES),
+  //    never under /api/auth.
 
   // 3. Forward the pathname so server components / layouts can read it
   //    via headers().get("x-pathname"). Next.js does not expose the
