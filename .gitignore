@@ -83,3 +83,11 @@ frontend/e2e/.auth/
 /legacy branches/
 /cursor-claude-legacy/
 /sleep-stress/
+
+# Local-only files at the repo root that must NEVER be committed:
+# - MindMap-2/ is a scratch subdirectory that hosts Claude Code / assistant
+#   metadata; contents are session-specific and irrelevant to the app.
+# - password manager.txt is a personal notes file the user keeps at the
+#   repo root; even if it's ever renamed the same pattern catches it.
+/MindMap-2/
+password*manager*.txt
