@@ -46,3 +46,63 @@ landed on `main` and are deployed to production via Vercel. Phase 1 items
 signed, SOC 2 the day an enterprise buyer asks. Biggest gap remains journal
 plaintext (1.5). Today's Sentry/rate-limit/guardrail work all moves the
 §164.312 and SOC 2 "monitoring" rows forward.
+
+---
+
+# Where we left off — 2026-09-19 (brief check-in)
+
+Two weeks after session 2 (2026-09-04). Almost nothing to do here — this
+session was ~15 minutes of orientation + one safety commit. Then we
+compacted; deeper work resumes next time.
+
+## What's happened since session 2
+
+Between 2026-09-04 and 2026-09-19 the user shipped, without me, more of
+Phase 1:
+
+- `d633e3d` **1.3 real cascade deletion** — accepted as PR #3
+  (`feat/code-backlog-1.3-deletion`, merged 2026-09-08). Section "Still
+  open from the Beta Launch Plan (code work)" above lists 1.3 as needing
+  a TestFlight-side end-to-end test; the code side is now on main.
+- `df4fbe8` `fix(ml)`: hardcoded public Supabase URL so cron jobs survive
+  a bad URL secret. PR #4 merged 2026-09-10.
+- `aba3753` `fix(auth)`: let Vercel cron reach `/api/cron/generate-reports`
+  without a session cookie.
+
+## What I did this session (2026-09-19)
+
+- **Committed `9affd6e`** — `.gitignore` now excludes
+  `password manager.txt` (untracked at repo root; one broad `git add`
+  from leaking) and `/MindMap-2/` (Claude Code scratch dir). Pattern is
+  `password*manager*.txt` so a rename catches too.
+- **Did not touch** the user's in-flight work:
+  - `docs/adr/001-journal-encryption.md` (untracked — this is the 1.5
+    decision doc)
+  - `docs/app-store-checklist.md` (+3 lines uncommitted)
+  - `frontend/MOBILE.md` (+3 lines uncommitted)
+  - `frontend/AGENTS.md`, `frontend/CLAUDE.md` (new agent-instruction
+    files)
+
+## When we resume, the ranked next-work choice
+
+Presented but not chosen (user compacted before selecting). One of:
+
+1. **Help refine + implement ADR-001** (journal encryption). The user
+   was drafting `docs/adr/001-journal-encryption.md` when this session
+   started. Options in `docs/compliance-readiness.md` §164.312(a)(2)(iv):
+   envelope encryption (server can decrypt; keeps AI reflection working),
+   zero-knowledge (breaks AI reflection + crisis detection), or "disk-
+   only, document it honestly." The AI-side implications are load-
+   bearing — envelope is almost certainly the pragmatic call.
+2. **`recharts` 2 → 3 upgrade** to close the last two prod vulns
+   (`lodash` via recharts). Semver-major with breaking chart API
+   changes; needs a visual review of dashboard/insights charts.
+3. **Playwright E2E for core flows** — check-in → journal → insights →
+   medications. Phase 2 gate; existing auth + legal specs pass so the
+   infra is there.
+4. **Close the two parked Supabase advisor WARNs** — `pg_net` in public
+   schema and anon GraphQL discoverability on ~40 tables (RLS blocks
+   rows; `legal_documents` needs anon read so this must be surgical).
+
+Everything else in the "Still open" list from session 2 is unchanged.
+
