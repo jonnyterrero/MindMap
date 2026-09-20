@@ -21,6 +21,42 @@ Also preserve (working — don't rebuild): RLS on all tables, error boundaries, 
 
 ---
 
+---
+
+## Status re-verified against `main` @ `6e94382` — 2026-09-20
+
+The body of this plan was written against `main` @ `6544637` (2026-08-06).
+Much of Phase 0 and Phase 1 has shipped since. Verified in code on this date:
+
+**Phase 0 — done**
+- 0.2 stub API surface deleted (`/api/v1/*`, `/api/auth`, `lib/api-auth.ts` all absent) — PR 1
+- 0.3 env naming: `ANTHROPIC_API_KEY` + `CRON_SECRET` in `.env.example`; package renamed `mindmap`; single service worker (`app/sw.js/route.ts`) — PR 3
+- 0.4 ML gate live in `.github/workflows/ci.yml` (pytest + ruff + mypy) — PR 4
+- 0.5 wearables "coming soon" + legal links in signup/consent — PR 10
+- 0.3 RLS policy fixes migrated (`023_rls_policy_fixes.sql`) — PR 2
+
+**Phase 1 — done**
+- 1.2 local notifications via Capacitor — `457ed83`
+- 1.3 cascade account deletion — `d633e3d` + `026_account_deletion_cascade.sql` (code side; still needs a TestFlight end-to-end pass)
+- 1.4 per-user AI rate limits (`lib/ai-rate-limit.ts` + `024_ai_usage_limits.sql`) and Sentry (`instrumentation*.ts`, `sentry.*.config.ts`) — `d974544`
+- 1.6 insight guardrails + feedback + history trend — `a81a134` + `025_insight_feedback.sql`
+
+**Phase 2 — partly done**
+- 2.4 per-route loading skeletons + not-found — PR 5
+- 2.6 mindmap graph cron live and green daily (`ml-graph-cron.yml`)
+- 2.7 `docs/compliance-readiness.md` written
+
+**Still open — carried forward**
+- 0.1 key rotation — status unverified from the repo; confirm out-of-band
+- 0.7 onboarding funnel completion + disclaimer copy pass
+- 1.1 check-in < 90s polish; 10-day baseline UX; baseline report end-to-end verification
+- 1.5 encryption posture — ADR-001 was drafted in a prior session but is **not in the repo**; `docs/adr/` does not exist. Needs re-drafting.
+- 1.7 analytics opt-out — `<Analytics />` and `<SpeedInsights />` still load unconditionally in `app/layout.tsx` with no consent gate
+- 2.3 offline queue beyond journal
+- 2.5 Playwright E2E — `e2e/` covers auth + legal pages only; core flows (check-in → journal → insights → medications) not covered, and the CI `e2e` job is skipped until the `NEXT_PUBLIC_SUPABASE_*` repo Variables are set
+- 2.8 ADR-001 harden-vs-migrate decision
+- Dependency vulns: 6 transitive (lodash via recharts ×2, brace-expansion via @sentry/nextjs ×3, baseline-browser-mapping via next)
+
 ## Phase 0 — Security & trust gate (this week)
 
 ### 0.1 Rotate exposed production keys — MANUAL, DO FIRST
