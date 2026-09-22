@@ -2,9 +2,8 @@ import type React from "react"
 import type { Metadata, Viewport } from "next"
 import { Space_Grotesk, DM_Sans } from "next/font/google"
 import "./globals.css"
-import { Analytics } from "@vercel/analytics/next"
-import { SpeedInsights } from "@vercel/speed-insights/next"
 import { UpdatePrompt } from "@/components/update-prompt"
+import { PrivacyAwareTelemetry } from "@/components/privacy-aware-telemetry"
 import { THEME_INIT_SCRIPT } from "@/lib/themes"
 
 const spaceGrotesk = Space_Grotesk({
@@ -68,8 +67,7 @@ export default function RootLayout({
       </head>
       <body className={`font-sans ${spaceGrotesk.variable} ${dmSans.variable} antialiased`}>
         {children}
-        <Analytics />
-        <SpeedInsights />
+        <PrivacyAwareTelemetry />
         <UpdatePrompt />
       </body>
     </html>

@@ -54,9 +54,14 @@ export default function PrivacyPage() {
 
       <h2>5. Analytics &amp; crash reporting</h2>
       <p>
-        Analytics and crash reporting are off by default. You can enable
-        them under Settings → Privacy. We use Vercel Analytics for
-        aggregated, anonymous page views when enabled.
+        Optional product analytics and performance measurement are off by
+        default. You can enable or disable them under Settings → Privacy. When
+        enabled, we use Vercel Analytics, Vercel Speed Insights, and PostHog
+        with a pseudonymous account identifier, but without journal text,
+        symptom values, or other personal health data.
+        Separate operational error monitoring may receive de-identified
+        technical diagnostics so we can identify crashes; session replay and
+        default PII collection are disabled.
       </p>
 
       <h2>6. Push notifications</h2>

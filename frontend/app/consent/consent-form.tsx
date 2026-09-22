@@ -77,11 +77,11 @@ const CONSENT_ITEMS: Array<{
   },
   {
     id: "analytics_collection",
-    label: "Anonymous Analytics (optional)",
+    label: "De-identified Analytics (optional)",
     description: (
       <>
-        I allow anonymized, aggregated usage data to improve the app. No
-        personal health data is included.
+        I allow product and performance data tied to a pseudonymous account ID
+        to improve the app. No personal health data is included.
       </>
     ),
     required: false,

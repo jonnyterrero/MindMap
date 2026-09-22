@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase-server";
 import { revalidatePath } from "next/cache";
 import { geocodeCity, fetchDailyWeather, fetchAirQuality } from "@/lib/weather";
 import { APP_THEME_IDS } from "@/lib/themes";
+import { resolveAnalyticsOptIn } from "@/lib/analytics-consent";
 
 export async function getProfile() {
   const supabase = await createClient();
@@ -29,6 +30,52 @@ export async function updateProfile(displayName: string, timezone: string) {
     .update({ display_name: displayName.trim(), timezone })
     .eq("id", user.id);
 
+  if (error) return { error: error.message };
+
+  revalidatePath("/settings");
+  return { success: true };
+}
+
+export async function getAnalyticsPreference(): Promise<boolean> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const { data: preference, error: preferenceError } = await supabase
+    .from("user_privacy_settings")
+    .select("analytics_opt_in")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (preferenceError) return false;
+
+  let consent = null;
+  if (!preference) {
+    const result = await supabase
+      .from("consent_records")
+      .select("consent_given")
+      .eq("user_id", user.id)
+      .eq("consent_type", "analytics_collection")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!result.error) consent = result.data;
+  }
+
+  return resolveAnalyticsOptIn(preference, consent);
+}
+
+export async function updateAnalyticsPreference(enabled: boolean) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { error } = await supabase
+    .from("user_privacy_settings")
+    .upsert(
+      { user_id: user.id, analytics_opt_in: enabled },
+      { onConflict: "user_id" },
+    );
   if (error) return { error: error.message };
 
   revalidatePath("/settings");
