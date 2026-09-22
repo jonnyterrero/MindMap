@@ -20,7 +20,7 @@ const PUBLIC_ROUTES = [
 // API routes that should return 401 JSON (not redirect to login page)
 const API_PREFIX = "/api/";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // 1. The marketing landing page ("/") is public and is shown to every
