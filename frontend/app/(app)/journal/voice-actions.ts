@@ -1,10 +1,11 @@
 "use server";
 
-import { createClient } from "@/lib/supabase-server";
+import { createClient, createServiceClient } from "@/lib/supabase-server";
 import { revalidatePath } from "next/cache";
 import { detectCrisis, CRISIS_RESOURCES, type CrisisSeverity } from "@/lib/crisis-detection";
 import { analyzeVoiceTranscript } from "@/lib/voice-sentiment";
 import { consumeAiQuota } from "@/lib/ai-rate-limit";
+import { isEncryptionEnabled, encryptJournalBodyForUser } from "@/lib/journal-crypto";
 
 export type VoiceSaveResult =
   | { error: string }
@@ -13,6 +14,13 @@ export type VoiceSaveResult =
 /**
  * Persist a transcribed voice note: creates a linked journal entry, stores the
  * voice note, runs sentiment/themes (best-effort) and crisis detection.
+ *
+ * Encryption note: when JOURNAL_ENCRYPTION_MASTER_KEY is set, the journal
+ * entry created here goes through the same envelope encryption as any other
+ * journal entry. The `mindmap_voice_notes.transcript` column, however, still
+ * stores the plaintext transcript -- ADR-001 scopes envelope encryption to
+ * the journal body only. Encrypting the voice_notes transcript needs its own
+ * ADR + migration; tracked as a follow-up.
  */
 export async function saveVoiceNote(
   transcript: string,
@@ -27,23 +35,31 @@ export async function saveVoiceNote(
 
   const today = new Date().toISOString().split("T")[0];
 
-  // 1. Journal entry from the transcript.
+  // 1. Journal entry from the transcript. Encrypt the body in-process when
+  //    journal encryption is enabled (matches createJournalEntry). Title
+  //    stays cleartext -- it's structural, not user-authored content.
+  let entryRow: Record<string, unknown> = {
+    user_id: user.id,
+    entry_date: today,
+    title: "Voice note",
+    content: text,
+    mood_tags: [],
+    is_private: true,
+  };
+  if (isEncryptionEnabled()) {
+    const admin = await createServiceClient();
+    const patch = await encryptJournalBodyForUser(admin, user.id, text);
+    entryRow = { ...entryRow, ...patch };
+  }
   const { data: entry, error: entryErr } = await supabase
     .from("mindmap_journal_entries")
-    .insert({
-      user_id: user.id,
-      entry_date: today,
-      title: "Voice note",
-      content: text,
-      mood_tags: [],
-      is_private: true,
-    })
+    .insert(entryRow)
     .select("id")
     .single();
   if (entryErr) return { error: entryErr.message };
   const entryId = entry.id as string;
 
-  // 2. Crisis detection on the transcript.
+  // 2. Crisis detection on the transcript (plaintext we already have).
   const severity = detectCrisis(text);
   let crisis: { severity: CrisisSeverity; eventId: string | null } | null = null;
   if (severity) {
@@ -77,6 +93,8 @@ export async function saveVoiceNote(
   }
 
   // 4. Voice note row (no audio file stored — Web Speech transcribes live).
+  //    transcript column is NOT encrypted (out of scope for ADR-001; needs
+  //    its own ADR).
   await supabase.from("mindmap_voice_notes").insert({
     user_id: user.id,
     entry_id: entryId,
@@ -88,7 +106,8 @@ export async function saveVoiceNote(
     themes,
   });
 
-  // 5. Tag the journal entry with detected themes.
+  // 5. Tag the journal entry with detected themes. Only touches mood_tags,
+  //    so the encryption exclusivity CHECK is unaffected.
   if (themes.length > 0) {
     await supabase.from("mindmap_journal_entries").update({ mood_tags: themes }).eq("id", entryId);
   }

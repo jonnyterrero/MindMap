@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase-server";
+import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { isEncryptionEnabled, decryptJournalRows } from "@/lib/journal-crypto";
 
 export async function GET(request: Request) {
   const supabase = await createClient();
@@ -23,13 +24,30 @@ export async function GET(request: Request) {
     supabase.from("mindmap_goals").select("*").eq("user_id", user.id),
   ]);
 
+  // GDPR/CCPA: the export must be the user's data in a form they can read.
+  // If encryption is on, decrypt journal bodies in-process so the JSON/CSV
+  // download contains plaintext, and null out the ciphertext columns so we
+  // don't ship both formats side-by-side.
+  let journalRows = journal.data ?? [];
+  if (isEncryptionEnabled() && journalRows.length > 0) {
+    const admin = await createServiceClient();
+    const decrypted = await decryptJournalRows(admin, journalRows as Array<Record<string, unknown>>);
+    journalRows = decrypted.map((row) => ({
+      ...row,
+      body_encrypted: null,
+      encryption_key_id: null,
+      encryption_algo: "none",
+      encrypted_at: null,
+    }));
+  }
+
   const exportData = {
     exported_at: new Date().toISOString(),
     user_id: user.id,
     entries: entries.data ?? [],
     routines: routines.data ?? [],
     medication_schedules: meds.data ?? [],
-    journal_entries: journal.data ?? [],
+    journal_entries: journalRows,
     therapy_sessions: therapy.data ?? [],
     goals: goals.data ?? [],
   };

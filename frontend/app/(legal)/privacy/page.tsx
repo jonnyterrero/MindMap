@@ -86,8 +86,13 @@ export default function PrivacyPage() {
       <p>
         Data is stored in Supabase Postgres with row-level security
         enforced on every health-related table. All traffic is encrypted
-        in transit (TLS 1.2+). Journal entries support
-        application-level encryption for sensitive content.
+        in transit (TLS 1.2+). Journal entries you write are encrypted at
+        the application level using envelope encryption (AES-256-GCM):
+        each account has its own data-encryption key, wrapped by a master
+        key we hold on the server. This protects the journal body in
+        database backups and dumps; it does not hide journal content from
+        our own systems when features you have opted into (AI reflection,
+        AI reports) send that content to our AI provider on your behalf.
       </p>
 
       <h2>10. Children</h2>

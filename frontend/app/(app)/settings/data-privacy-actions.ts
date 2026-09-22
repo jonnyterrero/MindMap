@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient, createServiceClient } from "@/lib/supabase-server";
+import { isEncryptionEnabled, decryptJournalRows } from "@/lib/journal-crypto";
 
 // User-owned tables exported via the caller's own RLS session (they can read
 // all of their own rows). `profiles` is keyed by id; the rest by user_id.
@@ -45,6 +46,27 @@ export async function exportUserData(): Promise<{ error: string } | { bundle: Ex
   for (const t of EXPORT_TABLES) {
     const { data, error } = await supabase.from(t).select("*").eq("user_id", user.id);
     tables[t] = error ? [] : data ?? [];
+  }
+
+  // GDPR/CCPA: decrypt journal bodies so the bundle the user downloads is
+  // plaintext they can actually read. Null out the ciphertext columns so we
+  // don't ship both formats and confuse the export.
+  if (isEncryptionEnabled()) {
+    const journalRows = tables["mindmap_journal_entries"] ?? [];
+    if (journalRows.length > 0) {
+      const admin = await createServiceClient();
+      const decrypted = await decryptJournalRows(
+        admin,
+        journalRows as Array<Record<string, unknown>>,
+      );
+      tables["mindmap_journal_entries"] = decrypted.map((row) => ({
+        ...row,
+        body_encrypted: null,
+        encryption_key_id: null,
+        encryption_algo: "none",
+        encrypted_at: null,
+      }));
+    }
   }
 
   return {

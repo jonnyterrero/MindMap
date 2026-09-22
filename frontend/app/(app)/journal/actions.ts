@@ -1,12 +1,18 @@
 "use server";
 
-import { createClient } from "@/lib/supabase-server";
+import { createClient, createServiceClient } from "@/lib/supabase-server";
 import { revalidatePath } from "next/cache";
 import { reflectOnJournalText, REFLECTION_MODEL } from "@/lib/ai-reflection";
 import { detectCrisis, CRISIS_RESOURCES, type CrisisSeverity } from "@/lib/crisis-detection";
 import { AnalyticsEvent } from "@/lib/analytics-events";
 import { captureServerEvent } from "@/lib/analytics-server";
 import { consumeAiQuota, quotaExceededMessage } from "@/lib/ai-rate-limit";
+import {
+  isEncryptionEnabled,
+  encryptJournalBodyForUser,
+  decryptJournalRow,
+  decryptJournalRows,
+} from "@/lib/journal-crypto";
 
 export type CrisisFlag = { severity: CrisisSeverity; eventId: string | null };
 
@@ -38,7 +44,12 @@ export async function getJournalEntries() {
     .order("entry_time", { ascending: false })
     .limit(50);
 
-  return data ?? [];
+  const rows = data ?? [];
+  if (!isEncryptionEnabled() || rows.length === 0) return rows;
+  // Service-role client for the DEK lookup (mindmap_journal_user_keys is
+  // service-role write-only; select scoped to the caller in the row rule).
+  const admin = await createServiceClient();
+  return decryptJournalRows(admin, rows);
 }
 
 export async function createJournalEntry(
@@ -48,9 +59,20 @@ export async function createJournalEntry(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
 
+  // Encryption cutover: when JOURNAL_ENCRYPTION_MASTER_KEY is set, encrypt
+  // the body in-process and clear plaintext `content` before insert (the
+  // journal_encryption_exclusivity CHECK enforces exactly-one). Unset =
+  // legacy plaintext path; matches how rows have always been written.
+  let insertRow: Record<string, unknown> = { user_id: user.id, ...payload };
+  if (isEncryptionEnabled()) {
+    const admin = await createServiceClient();
+    const patch = await encryptJournalBodyForUser(admin, user.id, payload.content);
+    insertRow = { user_id: user.id, ...payload, ...patch };
+  }
+
   const { data: inserted, error } = await supabase
     .from("mindmap_journal_entries")
-    .insert({ user_id: user.id, ...payload })
+    .insert(insertRow)
     .select("id")
     .single();
 
@@ -58,7 +80,8 @@ export async function createJournalEntry(
   revalidatePath("/journal");
   await captureServerEvent(user.id, AnalyticsEvent.JournalCreated);
 
-  // Crisis trigger point: scan the saved content.
+  // Crisis trigger point: scan the plaintext we already have in payload.
+  // Reading `content` back from the row would be null under encryption.
   const severity = detectCrisis(payload.content);
   let crisis: CrisisFlag | null = null;
   if (severity) {
@@ -84,9 +107,20 @@ export async function updateJournalEntry(id: string, payload: Partial<JournalPay
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
 
+  // Only re-encrypt when the body itself is in the patch; title/mood/privacy
+  // updates go through as plain column updates and preserve whatever encrypt
+  // state the row already has (the exclusivity CHECK stays satisfied because
+  // we're not touching either `content` or `body_encrypted`).
+  let updateRow: Record<string, unknown> = { ...payload };
+  if (payload.content !== undefined && isEncryptionEnabled()) {
+    const admin = await createServiceClient();
+    const patch = await encryptJournalBodyForUser(admin, user.id, payload.content);
+    updateRow = { ...payload, ...patch };
+  }
+
   const { error } = await supabase
     .from("mindmap_journal_entries")
-    .update(payload)
+    .update(updateRow)
     .eq("id", id)
     .eq("user_id", user.id);
 
@@ -146,13 +180,23 @@ export async function reflectOnJournalEntry(
 
   const { data: entry } = await supabase
     .from("mindmap_journal_entries")
-    .select("id, content")
+    .select("id, content, body_encrypted, encryption_algo, encryption_key_id")
     .eq("id", entryId)
     .eq("user_id", user.id)
     .maybeSingle();
-  if (!entry?.content) {
-    return { error: "Entry not found or empty." };
+  if (!entry) return { error: "Entry not found." };
+
+  // Decrypt in-process before shipping to Anthropic. The model DOES see the
+  // plaintext (that's the point of the reflection feature) -- envelope
+  // encryption protects the DB / backups, not the AI request path. Privacy
+  // policy calls this out.
+  let plaintext: string | null = entry.content as string | null;
+  if (isEncryptionEnabled() && entry.body_encrypted) {
+    const admin = await createServiceClient();
+    const decrypted = await decryptJournalRow(admin, entry);
+    plaintext = decrypted.content ?? null;
   }
+  if (!plaintext) return { error: "Entry is empty." };
 
   // Daily per-user quota (cost/abuse guardrail).
   const quotaCheck = await consumeAiQuota(supabase, "journal_reflection");
@@ -162,7 +206,7 @@ export async function reflectOnJournalEntry(
 
   let reflection;
   try {
-    reflection = await reflectOnJournalText(entry.content as string);
+    reflection = await reflectOnJournalText(plaintext);
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Reflection failed." };
   }
