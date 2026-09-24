@@ -110,6 +110,8 @@ Everything else in the "Still open" list from session 2 is unchanged.
 
 # Where we left off — 2026-09-22 (session 4)
 
+> **📄 Full standalone handoff for cloud + desktop:** [handoffs/2026-09-22-encryption-cutover.md](handoffs/2026-09-22-encryption-cutover.md) — self-contained brief with the complete cutover playbook, rollback plan, deferred follow-ups, and file map. Read that first if resuming cold.
+
 The session that shipped ADR-001. Both slices went straight to `main`:
 
 - `6fd1580` **journal encryption scaffold** — migration 027 (`mindmap_journal_user_keys`), `frontend/lib/journal-crypto.ts` (AES-256-GCM envelope primitives), 15 unit tests, `JOURNAL_ENCRYPTION_MASTER_KEY` in `.env.example`.
