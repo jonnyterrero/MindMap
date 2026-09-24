@@ -6,6 +6,8 @@
 **State of repo at handoff:** [main @ `1d3c4fc`](https://github.com/jonnyterrero/MindMap/commit/1d3c4fc), clean sync between local + `origin/main`
 **Purpose of this doc:** Self-contained brief so a fresh cloud session (or the desktop, whichever picks up next) can execute the cutover and its follow-ups without re-deriving anything.
 
+> **Read alongside:** [`docs/session-handoff-2026-09-24.md`](../session-handoff-2026-09-24.md) — the parallel handoff written from the cloud session's perspective. That doc is authoritative for **decisions made about key handling** (in particular: do NOT put `JOURNAL_ENCRYPTION_MASTER_KEY` in the GitHub Actions env — leak risk from any Actions log). This doc is longer and covers the ADR-001 implementation history + cutover mechanics; the cloud handoff has fresher operational context.
+
 ---
 
 ## TL;DR
@@ -169,9 +171,15 @@ Each has a clear next step so a fresh session doesn't re-derive it.
 
 **Current behavior:** the function already filters out rows with null `content` (line 74). So after cutover, encrypted entries silently drop from the graph pipeline. **Not a crash, but the mindmap-graph feature loses coverage of every entry written after cutover** until this is fixed.
 
-**Fix:** implement the same wrap/unwrap protocol in Python. The wrapped-DEK schema is stable; unwrap-then-decrypt-body needs `JOURNAL_ENCRYPTION_MASTER_KEY` in the GitHub Actions env for the cron. Add `cryptography` (or `pycryptodome`) to `ml/pyproject.toml`. Match the body layout exactly: `iv[0:12] || tag[12:28] || ciphertext[28:]`, `AES-256-GCM`.
+**How to fix — DO NOT put the master key in GitHub Actions.** Decision from the cloud handoff (see [session-handoff-2026-09-24.md](../session-handoff-2026-09-24.md) §Decisions): adding `JOURNAL_ENCRYPTION_MASTER_KEY` to the ML cron's GitHub Actions env means any leaked Actions log can unwrap every user's journal. The correct architecture is:
 
-**Estimated effort:** ~half a day including tests.
+1. Decrypt inside the **Vercel process** that already holds the master key (a new server-side endpoint the ML batch can call, or move the graph batch trigger into a Vercel cron so it runs in-process).
+2. The Vercel endpoint returns the plaintext body to the ML batch **only for the duration of the graph build** — the batch must not persist the plaintext anywhere.
+3. `mindmap_graphs` currently stores quoted journal text; the ML decrypt path must not write a **second** long-lived plaintext copy — either scrub the quoted spans from graph payloads or store span offsets against the encrypted row so the plaintext can be re-fetched on demand.
+
+**Not to do:** hand the master key to GitHub Actions, mount it into the batch's env, or copy plaintext bodies into any table other than the one already handling them.
+
+**Estimated effort:** ~1-2 days (larger than "just add crypto to Python" because it needs the Vercel endpoint + a decision about `mindmap_graphs` quoted-text retention).
 
 ### 2. `mindmap_voice_notes.transcript` plaintext
 
