@@ -3,6 +3,7 @@ import type { User } from "@supabase/supabase-js";
 import { AppThemeProvider } from "@/components/app-theme-provider";
 import { AppHeader } from "@/components/app-header";
 import { BottomNav } from "@/components/bottom-nav";
+import { CompanionFab } from "@/components/companion-fab";
 import type { AppThemeId } from "@/lib/themes";
 
 /**
@@ -37,6 +38,7 @@ export function AppShell({
       >
         {children}
       </main>
+      <CompanionFab />
       <BottomNav />
     </AppThemeProvider>
   );

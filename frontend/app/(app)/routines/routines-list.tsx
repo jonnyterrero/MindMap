@@ -16,7 +16,17 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Plus, Pencil, Trash2, Check, X, Loader2 } from "lucide-react";
+import { availablePresets } from "@/lib/routine-presets";
 
 type Routine = {
   id: string;
@@ -32,21 +42,39 @@ export function RoutinesList({ routines: initialRoutines }: { routines: Routine[
   const [isPending, startTransition] = useTransition();
   const [routines, setRoutines] = useState(initialRoutines);
 
-  function handleCreate() {
-    if (!newName.trim()) return;
+  const presetGroups = availablePresets(routines.map((r) => r.name));
+
+  /** Optimistically add a routine, then reconcile the temp row with the saved
+   *  one (real id) or roll it back if the insert failed. Reconciling the id is
+   *  what makes a just-added routine immediately toggle/rename/delete-able. */
+  function addRoutine(name: string) {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const tempId = `temp-${Date.now()}`;
     const tempRoutine: Routine = {
-      id: `temp-${Date.now()}`,
-      name: newName.trim(),
+      id: tempId,
+      name: trimmed,
       is_active: true,
       created_at: new Date().toISOString(),
     };
     setRoutines((prev) => [...prev, tempRoutine]);
-    const nameToCreate = newName;
-    setNewName("");
 
     startTransition(async () => {
-      await createRoutine(nameToCreate);
+      const result = await createRoutine(trimmed);
+      setRoutines((prev) => {
+        if ("routine" in result && result.routine) {
+          return prev.map((r) => (r.id === tempId ? result.routine! : r));
+        }
+        // Insert failed — drop the optimistic row.
+        return prev.filter((r) => r.id !== tempId);
+      });
     });
+  }
+
+  function handleCreate() {
+    if (!newName.trim()) return;
+    addRoutine(newName);
+    setNewName("");
   }
 
   function handleUpdate(id: string) {
@@ -84,7 +112,34 @@ export function RoutinesList({ routines: initialRoutines }: { routines: Routine[
         <CardHeader>
           <CardTitle className="text-base">Add Routine</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
+          {presetGroups.length > 0 && (
+            <Select
+              // key forces a remount so the trigger resets to placeholder after
+              // each pick (a controlled-to-"" reset on Radix Select is awkward).
+              key={routines.length}
+              value=""
+              onValueChange={(name) => addRoutine(name)}
+              disabled={isPending}
+            >
+              <SelectTrigger className="w-full" aria-label="Add a suggested routine">
+                <SelectValue placeholder="Choose a suggested routine…" />
+              </SelectTrigger>
+              <SelectContent>
+                {presetGroups.map((group) => (
+                  <SelectGroup key={group.category}>
+                    <SelectLabel>{group.category}</SelectLabel>
+                    {group.presets.map((preset) => (
+                      <SelectItem key={preset.name} value={preset.name}>
+                        {preset.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
           <form
             onSubmit={(e) => {
               e.preventDefault();

@@ -28,16 +28,20 @@ export async function createRoutine(name: string) {
 
   if (!user) return { error: "Not authenticated" };
 
-  const { error } = await supabase.from("mindmap_routines").insert({
-    user_id: user.id,
-    name: name.trim(),
-  });
+  const { data, error } = await supabase
+    .from("mindmap_routines")
+    .insert({
+      user_id: user.id,
+      name: name.trim(),
+    })
+    .select("id, name, is_active, created_at")
+    .single();
 
   if (error) return { error: error.message };
 
   revalidatePath("/routines");
   revalidatePath("/today");
-  return { success: true };
+  return { success: true, routine: data };
 }
 
 export async function updateRoutine(id: string, name: string) {
