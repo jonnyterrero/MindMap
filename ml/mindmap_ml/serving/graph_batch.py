@@ -22,7 +22,8 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-from datetime import UTC, datetime
+import os
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import pandas as pd
@@ -40,6 +41,15 @@ CONTENT_COL = "content"
 def content_sha(text: str) -> str:
     """Stable digest of the source text — the skip-unchanged key."""
     return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
+
+
+def _lookback_since() -> str:
+    """ISO-8601 watermark for the incremental pull: now minus the lookback
+    window (``ML_JOURNAL_LOOKBACK_DAYS``, default 7). Generous relative to the
+    daily cron so an edited entry is always re-pulled; the content_sha skip
+    dedups the overlap. Use --all (no watermark) for backfill or recovery."""
+    days = int(os.environ.get("ML_JOURNAL_LOOKBACK_DAYS", "7"))
+    return (datetime.now(UTC) - timedelta(days=days)).isoformat()
 
 
 def _entry_date_str(value: Any) -> str | None:
@@ -169,7 +179,12 @@ def main() -> None:
         )
 
         client = get_client()
-        journal = read_journal_entries(client)
+        # Incremental by default: pull only entries updated within the lookback
+        # window (bounds plaintext exposure from the decrypt endpoint; the
+        # content_sha skip below still dedups unchanged entries). --all pulls the
+        # full history, which is also what a first-run backfill needs.
+        since = None if args.all else _lookback_since()
+        journal = read_journal_entries(client, since=since)
         existing = {} if args.all else read_graph_shas(client)
         sink = None if args.dry_run else SupabaseGraphSink(client)
 

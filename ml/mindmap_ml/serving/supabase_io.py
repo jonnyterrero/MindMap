@@ -8,7 +8,11 @@ so the rest of the package (and its tests) never require it.
 
 from __future__ import annotations
 
+import json
 import os
+import urllib.error
+import urllib.parse
+import urllib.request
 from typing import Any, Protocol
 
 import pandas as pd
@@ -53,22 +57,69 @@ def read_entries(client: Any) -> pd.DataFrame:
     return df
 
 
-def read_journal_entries(client: Any) -> pd.DataFrame:
+def _fetch_decrypted_journal(url: str, secret: str, since: str | None) -> list[dict[str, Any]]:
+    """Pull decrypted journal entries from the Vercel decrypt endpoint (ADR-002).
+
+    The master key lives only in Vercel, so encrypted bodies are decrypted there
+    and returned over TLS. Plaintext stays in memory here and is never persisted
+    beyond the quoted spans the graph already stores. Uses stdlib urllib so the
+    batch gains no new dependency.
+    """
+    if since:
+        sep = "&" if "?" in url else "?"
+        url = f"{url}{sep}since={urllib.parse.quote(since)}"
+    req = urllib.request.Request(url, headers={"Authorization": f"Bearer {secret}"})
+    try:
+        with urllib.request.urlopen(req, timeout=120) as resp:  # noqa: S310 (fixed https endpoint)
+            payload = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        raise RuntimeError(
+            f"journal decrypt endpoint returned HTTP {e.code} (check ML_JOURNAL_DECRYPT_SECRET / URL)"
+        ) from e
+    except urllib.error.URLError as e:
+        raise RuntimeError(f"journal decrypt endpoint unreachable: {e.reason}") from e
+    entries = payload.get("entries", [])
+    if not isinstance(entries, list):
+        raise RuntimeError("journal decrypt endpoint returned a malformed payload")
+    return entries
+
+
+def read_journal_entries(client: Any, since: str | None = None) -> pd.DataFrame:
     """Read journal entries the graph pipeline runs over.
 
-    Selects only the fields the writer needs -- NOT the whole row -- so
-    encrypted blobs and unrelated columns never leave the DB. Drops
-    soft-deleted rows (``deleted_at``) and rows without plaintext ``content``
-    (encrypted-only entries store ciphertext in ``body_encrypted``; the
-    pipeline needs plaintext to build offset-addressable spans).
+    Two sources, chosen by environment:
+
+    * **Decrypt endpoint** (when ``ML_JOURNAL_DECRYPT_URL`` +
+      ``ML_JOURNAL_DECRYPT_SECRET`` are set): the Vercel route decrypts
+      encrypted bodies and returns plaintext, so the pipeline covers encrypted
+      entries without the master key ever reaching this (GitHub Actions)
+      environment. See ADR-002.
+    * **Direct table read** (fallback, e.g. local/dev without the endpoint):
+      selects only the fields the writer needs so encrypted blobs never leave
+      the DB. Rows encrypted-only (plaintext ``content`` is null) are skipped,
+      exactly as before the endpoint existed.
+
+    ``since`` is an optional ISO-8601 watermark (``updated_at >= since``) that
+    bounds how much plaintext a run surfaces; the caller's ``content_sha`` skip
+    still prevents recomputing unchanged entries, so a watermark never drops
+    work. Soft-deleted rows and blank content are always dropped.
     """
-    res = (
-        client.table(JOURNAL_TABLE)
-        .select("id, user_id, entry_date, content, deleted_at")
-        .is_("deleted_at", "null")
-        .execute()
-    )
-    df = pd.DataFrame(res.data or [])
+    url = os.environ.get("ML_JOURNAL_DECRYPT_URL")
+    secret = os.environ.get("ML_JOURNAL_DECRYPT_SECRET")
+
+    if url and secret:
+        df = pd.DataFrame(_fetch_decrypted_journal(url, secret, since))
+    else:
+        query = (
+            client.table(JOURNAL_TABLE)
+            .select("id, user_id, entry_date, content, deleted_at")
+            .is_("deleted_at", "null")
+        )
+        if since:
+            query = query.gte("updated_at", since)
+        res = query.execute()
+        df = pd.DataFrame(res.data or [])
+
     if df.empty:
         return df
     df = df[df["content"].notna() & (df["content"].str.strip() != "")]

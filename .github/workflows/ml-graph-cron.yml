@@ -82,6 +82,12 @@ jobs:
         env:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY || secrets.ANTH_ML_ACTIONS_KEY }}
+          # ADR-002: decrypt encrypted journals via the Vercel endpoint so the
+          # master key never enters Actions. Both must be set for encrypted
+          # entries to be covered; if unset, the batch reads plaintext rows only
+          # and silently skips encrypted ones (same as before the endpoint).
+          ML_JOURNAL_DECRYPT_URL: ${{ secrets.ML_JOURNAL_DECRYPT_URL }}
+          ML_JOURNAL_DECRYPT_SECRET: ${{ secrets.ML_JOURNAL_DECRYPT_SECRET }}
         run: |
           export SUPABASE_SERVICE_ROLE_KEY="$(printf '%s' "$SUPABASE_SERVICE_ROLE_KEY" | tr -d '\r\n[:space:]')"
           uv sync
