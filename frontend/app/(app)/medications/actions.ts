@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase-server";
 import { revalidatePath } from "next/cache";
+import { userCalendarDate } from "@/lib/user-local-today";
 
 export type MedSchedulePayload = {
   name: string;
@@ -125,7 +126,7 @@ export async function getTodayAdherence() {
 
   if (!user) return [];
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = await userCalendarDate(supabase, user.id);
 
   const { data: schedules } = await supabase
     .from("mindmap_medication_schedule")
@@ -175,7 +176,7 @@ export async function logMedAdherence(
 
   if (!user) return { error: "Not authenticated" };
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = await userCalendarDate(supabase, user.id);
 
   let { data: entry } = await supabase
     .from("mindmap_entries")

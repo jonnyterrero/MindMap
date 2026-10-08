@@ -6,6 +6,7 @@ import { calculateMindMapScore } from "@/lib/mindmap-score";
 import { syncTodayWeather } from "@/app/(app)/settings/actions";
 import { AnalyticsEvent } from "@/lib/analytics-events";
 import { captureServerEvent } from "@/lib/analytics-server";
+import { userCalendarDate } from "@/lib/user-local-today";
 
 const DEFAULT_CHECKIN_CARDS = [
   "sleep",
@@ -44,7 +45,7 @@ export async function upsertTodayEntry(payload: EntryPayload) {
     return { error: "Not authenticated" };
   }
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = await userCalendarDate(supabase, user.id);
 
   const { data: existing } = await supabase
     .from("mindmap_entries")
@@ -83,7 +84,7 @@ export async function addBodySensation(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = await userCalendarDate(supabase, user.id);
   let { data: entry } = await supabase
     .from("mindmap_entries")
     .select("id")
@@ -133,7 +134,7 @@ export async function getTodayEntry() {
 
   if (!user) return null;
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = await userCalendarDate(supabase, user.id);
 
   const { data } = await supabase
     .from("mindmap_entries")
@@ -153,7 +154,7 @@ export async function getActiveRoutinesWithStatus() {
 
   if (!user) return [];
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = await userCalendarDate(supabase, user.id);
 
   const { data: routines } = await supabase
     .from("mindmap_routines")
@@ -201,7 +202,7 @@ export async function toggleRoutineCompletion(
 
   if (!user) return { error: "Not authenticated" };
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = await userCalendarDate(supabase, user.id);
 
   let { data: entry } = await supabase
     .from("mindmap_entries")
@@ -294,7 +295,7 @@ export async function saveCheckIn(payload: EntryPayload) {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = await userCalendarDate(supabase, user.id);
 
   const { data: existing } = await supabase
     .from("mindmap_entries")

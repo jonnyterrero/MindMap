@@ -13,6 +13,7 @@ import {
 import { createConversation } from "@/app/(app)/companion/actions";
 import { VoiceRecorder } from "@/components/voice-recorder";
 import { enqueueJournalEntry } from "@/lib/offline-queue";
+import { browserCalendarDate } from "@/lib/local-date";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -119,7 +120,7 @@ export function JournalList({
   function handleCreate() {
     if (!content.trim()) return;
     const payload: JournalPayload = {
-      entry_date: new Date().toISOString().split("T")[0],
+      entry_date: browserCalendarDate(),
       title: title.trim() || null,
       content: content.trim(),
       mood_tags: moodTags,

@@ -1,30 +1,8 @@
 "use server";
 
 import { createClient } from "@/lib/supabase-server";
-
-function isoDay(d: Date): string {
-  return d.toISOString().split("T")[0];
-}
-
-/** Consecutive-day streak ending today (or yesterday, as a one-day grace). */
-function computeStreak(dates: string[]): number {
-  const set = new Set(dates);
-  const today = new Date();
-  let cursor = new Date(today);
-
-  // If today isn't logged yet, an ongoing streak shouldn't read as broken
-  // until a full day is missed — start counting from yesterday.
-  if (!set.has(isoDay(cursor))) {
-    cursor.setDate(cursor.getDate() - 1);
-  }
-
-  let streak = 0;
-  while (set.has(isoDay(cursor))) {
-    streak += 1;
-    cursor.setDate(cursor.getDate() - 1);
-  }
-  return streak;
-}
+import { computeStreak } from "@/lib/local-date";
+import { userCalendarDate } from "@/lib/user-local-today";
 
 export interface HomeInsight {
   insight_type: string | null;
@@ -51,7 +29,7 @@ export async function getHomeData(): Promise<HomeData> {
     return { todayScore: null, todayDone: false, checkInsCompleted: 0, streak: 0, latestInsight: null };
   }
 
-  const today = isoDay(new Date());
+  const today = await userCalendarDate(supabase, user.id);
 
   const [entriesRes, countRes, insightRes] = await Promise.all([
     supabase
@@ -80,7 +58,7 @@ export async function getHomeData(): Promise<HomeData> {
     todayScore: (todayRow?.mindmap_score as number | null) ?? null,
     todayDone: Boolean(todayRow),
     checkInsCompleted: countRes.count ?? 0,
-    streak: computeStreak(entries.map((e) => e.entry_date as string)),
+    streak: computeStreak(entries.map((e) => e.entry_date as string), today),
     latestInsight: (insightRes.data as HomeInsight | null) ?? null,
   };
 }

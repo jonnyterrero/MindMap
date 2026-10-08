@@ -1,6 +1,8 @@
 "use server";
 
 import { createClient } from "@/lib/supabase-server";
+import { addCalendarDays } from "@/lib/local-date";
+import { userCalendarDate } from "@/lib/user-local-today";
 import { revalidatePath } from "next/cache";
 import {
   computePredictions,
@@ -32,9 +34,8 @@ export async function runPredictionEngine(): Promise<{ error: string } | { predi
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
 
-  const since = new Date();
-  since.setDate(since.getDate() - 14);
-  const sinceISO = since.toISOString().split("T")[0];
+  const today = await userCalendarDate(supabase, user.id);
+  const sinceISO = addCalendarDays(today, -14);
 
   const [entriesRes, wearableRes, weatherRes, sensationsRes] = await Promise.all([
     supabase

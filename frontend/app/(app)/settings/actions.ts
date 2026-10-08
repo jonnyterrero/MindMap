@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase-server";
 import { revalidatePath } from "next/cache";
 import { geocodeCity, fetchDailyWeather, fetchAirQuality } from "@/lib/weather";
 import { APP_THEME_IDS } from "@/lib/themes";
+import { userCalendarDate } from "@/lib/user-local-today";
 
 export async function getProfile() {
   const supabase = await createClient();
@@ -149,7 +150,7 @@ export async function syncTodayWeather() {
     return;
   }
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = await userCalendarDate(supabase, user.id);
 
   const { data: existing } = await supabase
     .from("mindmap_weather_daily")
@@ -216,7 +217,7 @@ export async function getTodayWeather(): Promise<TodayWeather> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
-  const today = new Date().toISOString().split("T")[0];
+  const today = await userCalendarDate(supabase, user.id);
   const { data } = await supabase
     .from("mindmap_weather_daily")
     .select("temp_max, aqi, pm25, pollen_level")

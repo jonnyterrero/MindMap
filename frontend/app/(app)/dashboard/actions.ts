@@ -1,6 +1,8 @@
 "use server";
 
 import { createClient } from "@/lib/supabase-server";
+import { addCalendarDays } from "@/lib/local-date";
+import { userCalendarDate } from "@/lib/user-local-today";
 
 export async function getLast30DaysEntries() {
   const supabase = await createClient();
@@ -10,9 +12,8 @@ export async function getLast30DaysEntries() {
 
   if (!user) return [];
 
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const startDate = thirtyDaysAgo.toISOString().split("T")[0];
+  const today = await userCalendarDate(supabase, user.id);
+  const startDate = addCalendarDays(today, -30);
 
   const { data } = await supabase
     .from("mindmap_entries")
@@ -47,9 +48,8 @@ export async function getMigraineRiskToday() {
 
   if (!user) return null;
 
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  const startDate = sevenDaysAgo.toISOString().split("T")[0];
+  const today = await userCalendarDate(supabase, user.id);
+  const startDate = addCalendarDays(today, -7);
 
   const { data: entries } = await supabase
     .from("mindmap_entries")

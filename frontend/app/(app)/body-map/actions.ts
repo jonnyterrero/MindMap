@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase-server";
 import { revalidatePath } from "next/cache";
+import { userCalendarDate } from "@/lib/user-local-today";
 
 export type BodySensationRow = {
   id: string;
@@ -25,7 +26,7 @@ export async function logBodySensation(input: {
   if (!user) return { error: "Not authenticated" };
   if (!input.bodyPart) return { error: "Pick a body area." };
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = await userCalendarDate(supabase, user.id);
   let { data: entry } = await supabase
     .from("mindmap_entries")
     .select("id")

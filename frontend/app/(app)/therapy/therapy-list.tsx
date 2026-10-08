@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/card";
 import { Plus, Trash2, Loader2, Heart, ArrowRight } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import { browserCalendarDate } from "@/lib/local-date";
 
 type Session = Record<string, unknown>;
 
@@ -28,7 +29,7 @@ export function TherapyList({ sessions: initialSessions }: { sessions: Session[]
   const [isPending, startTransition] = useTransition();
   const [sessions, setSessions] = useState(initialSessions);
   const [showNew, setShowNew] = useState(false);
-  const [sessionDate, setSessionDate] = useState(new Date().toISOString().split("T")[0]);
+  const [sessionDate, setSessionDate] = useState(browserCalendarDate);
   const [sessionTime, setSessionTime] = useState("");
   const [duration, setDuration] = useState("50");
   const [therapistName, setTherapistName] = useState("");
@@ -40,7 +41,7 @@ export function TherapyList({ sessions: initialSessions }: { sessions: Session[]
   const [nextDate, setNextDate] = useState("");
 
   function resetForm() {
-    setSessionDate(new Date().toISOString().split("T")[0]);
+    setSessionDate(browserCalendarDate());
     setSessionTime(""); setDuration("50"); setTherapistName("");
     setSessionType("Individual"); setMoodBefore(0); setMoodAfter(0);
     setNotes(""); setHomework(""); setNextDate("");

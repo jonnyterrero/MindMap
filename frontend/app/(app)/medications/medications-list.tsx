@@ -8,6 +8,7 @@ import {
   deleteMedSchedule,
   type MedSchedulePayload,
 } from "./actions";
+import { browserCalendarDate } from "@/lib/local-date";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -70,7 +71,7 @@ export function MedicationsList({ schedules: initialSchedules }: { schedules: Sc
       dose_mg: doseMg ? Number(doseMg) : null,
       frequency,
       reminder_time: reminderTime || null,
-      start_date: new Date().toISOString().split("T")[0],
+      start_date: browserCalendarDate(),
       end_date: null,
       notes: notes.trim() || null,
     };
