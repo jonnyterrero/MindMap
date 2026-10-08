@@ -43,6 +43,15 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // 1d. The ML graph cron (GitHub Actions) calls the journal decrypt
+  //     endpoint with ML_JOURNAL_DECRYPT_SECRET and no Supabase session
+  //     (ADR-002). Same shape as 1c: let /api/internal/ml/* reach its
+  //     handler, which enforces its own Bearer token. Without this the
+  //     middleware 401s the request before the route's auth ever runs.
+  if (pathname.startsWith("/api/internal/ml/")) {
+    return NextResponse.next();
+  }
+
   // 2. Other API routes get no blanket exemption: every remaining /api/**
   //    request falls through to the session check and returns 401 JSON
   //    (not an HTML redirect) when unauthenticated. Supabase's email/OAuth
