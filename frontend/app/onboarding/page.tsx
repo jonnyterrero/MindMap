@@ -4,7 +4,7 @@ import { OnboardingFlow } from "./onboarding-flow";
 
 export default async function OnboardingPage() {
   const done = await checkOnboardingStatus();
-  if (done) redirect("/today");
+  if (done) redirect("/home");
 
   return <OnboardingFlow />;
 }

@@ -38,7 +38,7 @@ export async function signIn(formData: FormData) {
   if (user) await captureServerEvent(user.id, AnalyticsEvent.SignedIn);
 
   revalidatePath("/", "layout");
-  redirect("/today");
+  redirect("/home");
 }
 
 // ─── Sign Up ─────────────────────────────────────────────────────────────────
@@ -68,8 +68,10 @@ export async function signUp(formData: FormData) {
 
   // If email confirmation is disabled in Supabase, this redirects immediately.
   // If enabled, user gets a confirmation email and lands here after clicking it.
+  // Home is the daily hub; the app layout still sends new accounts through
+  // consent and onboarding before they can stay there.
   revalidatePath("/", "layout");
-  redirect("/today");
+  redirect("/home");
 }
 
 // ─── Sign Out ─────────────────────────────────────────────────────────────────
@@ -123,5 +125,5 @@ export async function updatePassword(formData: FormData) {
   if (error) return { error: error.message };
 
   revalidatePath("/", "layout");
-  redirect("/today");
+  redirect("/home");
 }

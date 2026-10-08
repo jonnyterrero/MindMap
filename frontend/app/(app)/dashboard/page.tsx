@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { getLast30DaysEntries, getMigraineRiskToday } from "./actions";
 import { DashboardCharts } from "./dashboard-charts";
 import { MigraineRiskCard } from "./migraine-risk-card";
+import { Button } from "@/components/ui/button";
 
 export default async function DashboardPage() {
   const [entries, migraineRisk] = await Promise.all([
@@ -20,9 +22,12 @@ export default async function DashboardPage() {
       {migraineRisk && <MigraineRiskCard risk={migraineRisk} />}
 
       {entries.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          <p className="text-lg font-medium">No data yet</p>
-          <p>Start logging on your Today page to see trends here.</p>
+        <div className="py-12 text-center text-muted-foreground">
+          <p className="text-lg font-medium text-foreground">No data yet</p>
+          <p className="mb-4">Complete a check-in and your 30-day trends will show up here.</p>
+          <Button asChild>
+            <Link href="/today">Start check-in</Link>
+          </Button>
         </div>
       ) : (
         <DashboardCharts entries={entries} />

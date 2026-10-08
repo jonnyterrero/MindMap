@@ -15,7 +15,7 @@ setup("authenticate test user", async ({ page }) => {
   await page.getByRole("button", { name: "Sign In" }).click();
 
   await ensureAppReady(page);
-  await expect(page.getByRole("link", { name: "Today" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Check-In" })).toBeVisible();
 
   await page.context().storageState({ path: authFile });
 });

@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard,
+  Home,
   BookOpen,
   Lightbulb,
-  User,
+  Settings,
   CalendarHeart,
   type LucideIcon,
 } from "lucide-react";
@@ -21,12 +21,12 @@ type Tab = {
 // Five primary destinations. Check-In sits in the center as the emphasized
 // daily habit action. Secondary routes live in the top "More" menu.
 const leftTabs: Tab[] = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/home", label: "Home", icon: Home },
   { href: "/journal", label: "Journal", icon: BookOpen },
 ];
 const rightTabs: Tab[] = [
   { href: "/insights", label: "Insights", icon: Lightbulb },
-  { href: "/settings", label: "Profile", icon: User },
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
 const checkIn = { href: "/today", label: "Check-In", icon: CalendarHeart };
 

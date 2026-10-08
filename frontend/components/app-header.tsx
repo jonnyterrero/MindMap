@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Brain, Home, CalendarCheck, BookOpen, Pill, BarChart3,
   Lightbulb, MoreHorizontal, Settings, LogOut, Activity,
-  MessageCircle, FileText, Target, Heart, ListChecks, User,
+  MessageCircle, FileText, Target, Heart, ListChecks,
   Waypoints,
   type LucideIcon,
 } from "lucide-react";
@@ -27,7 +27,7 @@ type NavItem = { href: string; label: string; icon: LucideIcon };
 
 // Full primary nav shown inline on desktop.
 const desktopPrimary: NavItem[] = [
-  { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
+  { href: "/home", label: "Home", icon: Home },
   { href: "/today", label: "Check-In", icon: CalendarCheck },
   { href: "/journal", label: "Journal", icon: BookOpen },
   { href: "/insights", label: "Insights", icon: Lightbulb },
@@ -35,7 +35,7 @@ const desktopPrimary: NavItem[] = [
 
 // Secondary destinations — in "More" on every viewport.
 const moreNav: NavItem[] = [
-  { href: "/home", label: "Home", icon: Home },
+  { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
   { href: "/mindmap", label: "Mindmap", icon: Waypoints },
   { href: "/medications", label: "Meds", icon: Pill },
   { href: "/companion", label: "Companion", icon: MessageCircle },
@@ -60,7 +60,7 @@ export function AppHeader({ user }: { user: SupabaseUser }) {
     <header className="sticky top-0 z-40 glass-dock safe-area-top">
       <div className="container mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
         <div className="flex items-center gap-2">
-          <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
+          <Link href="/home" className="flex items-center gap-2 font-semibold">
             <Brain className="h-5 w-5 text-primary" aria-hidden="true" />
             <span className="font-[family-name:var(--font-space-grotesk)]">MindMap</span>
           </Link>
@@ -125,8 +125,8 @@ export function AppHeader({ user }: { user: SupabaseUser }) {
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
                 <Link href="/settings" className="flex items-center gap-2">
-                  <User className="h-4 w-4" aria-hidden="true" />
-                  Profile
+                  <Settings className="h-4 w-4" aria-hidden="true" />
+                  Settings
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuContent>

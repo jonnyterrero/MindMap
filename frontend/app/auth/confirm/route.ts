@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
 
   const token_hash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
-  const next = searchParams.get("next") ?? "/today";
+  const next = searchParams.get("next") ?? "/home";
 
   // Reject malformed confirmation links
   if (!token_hash || !type) {

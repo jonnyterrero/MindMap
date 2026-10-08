@@ -14,7 +14,7 @@ test.describe("authenticated app", () => {
 
     await expect(page).toHaveURL(/\/home$/);
     await expect(page.getByRole("link", { name: "MindMap" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Today" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Check-In" })).toBeVisible();
     await expect(page.getByText(/Today's check-in/)).toBeVisible();
   });
 
@@ -29,7 +29,7 @@ test.describe("authenticated app", () => {
 
   test("can navigate from home to today via nav", async ({ page }) => {
     await page.goto("/home");
-    await page.getByRole("link", { name: "Today" }).click();
+    await page.getByRole("link", { name: "Check-In" }).click();
 
     await expect(page).toHaveURL(/\/today$/);
   });

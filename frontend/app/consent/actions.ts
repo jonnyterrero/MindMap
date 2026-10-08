@@ -42,5 +42,5 @@ export async function grantConsent(consentTypes: string[]) {
     type_count: consentTypes.length,
   });
 
-  redirect("/today");
+  redirect("/home");
 }

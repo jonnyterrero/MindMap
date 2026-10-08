@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import Link from "next/link";
 import { saveCheckIn, type EntryPayload } from "./actions";
 import { RoutineChecklist } from "./routine-checklist";
 import { MedChecklist } from "./med-checklist";
@@ -263,9 +264,14 @@ export function GuidedCheckin({ initialEntry, routines, meds, cards, checkInsCom
               Edit check-in
             </Button>
             <Button className="flex-1" asChild>
-              <a href="/home">Go home</a>
+              <Link href="/home">Go home</Link>
             </Button>
           </div>
+          {baselineLeft === 0 && (
+            <Button variant="secondary" className="w-full" asChild>
+              <Link href="/baseline">View Baseline Report</Link>
+            </Button>
+          )}
         </CardContent>
       </Card>
     );
@@ -428,7 +434,7 @@ export function GuidedCheckin({ initialEntry, routines, meds, cards, checkInsCom
         </Card>
       )}
 
-      <div className="sticky bottom-4 z-10">
+      <div className="sticky bottom-[calc(6.75rem+env(safe-area-inset-bottom,0px))] z-20 md:bottom-4">
         <Button onClick={handleComplete} disabled={isPending} size="lg" className="w-full shadow-lg">
           {isPending ? <Loader2 className="animate-spin" /> : <Sparkles />}
           {isPending ? "Saving…" : "Complete check-in"}

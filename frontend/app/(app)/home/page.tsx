@@ -21,11 +21,11 @@ import {
 } from "lucide-react";
 
 const SECONDARY_LINKS = [
-  { href: "/dashboard", label: "History", icon: BarChart3 },
+  { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
   { href: "/journal", label: "Journal", icon: BookOpen },
   { href: "/medications", label: "Meds", icon: Pill },
   { href: "/routines", label: "Routines", icon: ListChecks },
-  { href: "/insights", label: "Reports", icon: Lightbulb },
+  { href: "/insights", label: "Insights", icon: Lightbulb },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

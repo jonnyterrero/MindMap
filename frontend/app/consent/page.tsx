@@ -4,7 +4,7 @@ import { ConsentForm } from "./consent-form";
 
 export default async function ConsentPage() {
   const hasConsented = await checkConsentStatus();
-  if (hasConsented) redirect("/today");
+  if (hasConsented) redirect("/home");
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4">
