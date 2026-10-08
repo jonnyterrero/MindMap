@@ -17,10 +17,9 @@ export type VoiceSaveResult =
  *
  * Encryption note: when JOURNAL_ENCRYPTION_MASTER_KEY is set, the journal
  * entry created here goes through the same envelope encryption as any other
- * journal entry. The `mindmap_voice_notes.transcript` column, however, still
- * stores the plaintext transcript -- ADR-001 scopes envelope encryption to
- * the journal body only. Encrypting the voice_notes transcript needs its own
- * ADR + migration; tracked as a follow-up.
+ * journal entry. Per ADR-003 the `mindmap_voice_notes.transcript` column is
+ * no longer written -- the linked journal entry is the sole, encrypted home
+ * for the transcript, so there is no plaintext duplicate to protect.
  */
 export async function saveVoiceNote(
   transcript: string,
@@ -93,14 +92,15 @@ export async function saveVoiceNote(
   }
 
   // 4. Voice note row (no audio file stored — Web Speech transcribes live).
-  //    transcript column is NOT encrypted (out of scope for ADR-001; needs
-  //    its own ADR).
+  //    Per ADR-003 we do NOT store the transcript here: the linked journal
+  //    entry (entryId) is its sole, already-encrypted home. Writing it again
+  //    would be a redundant plaintext copy. We keep the metadata only.
   await supabase.from("mindmap_voice_notes").insert({
     user_id: user.id,
     entry_id: entryId,
     storage_path: `webspeech://${Date.now()}`,
     duration_seconds: Math.round(durationSeconds),
-    transcript: text,
+    transcript: null,
     transcript_status: "complete",
     sentiment_score: sentiment,
     themes,
