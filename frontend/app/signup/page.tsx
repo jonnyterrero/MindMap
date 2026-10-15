@@ -3,8 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signUp } from "@/app/login/actions";
-import { Brain } from "lucide-react";
+import { signUp, resendConfirmation } from "@/app/login/actions";
+import { Brain, MailCheck } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -21,6 +21,11 @@ export default function SignUpPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  // Set once signUp reports confirmation is required — swaps the form for the
+  // "check your inbox" screen below.
+  const [sentTo, setSentTo] = useState<string | null>(null);
+  const [resendMsg, setResendMsg] = useState<string | null>(null);
+  const [resending, setResending] = useState(false);
 
   async function handleSubmit(formData: FormData) {
     setError(null);
@@ -35,11 +40,74 @@ export default function SignUpPage() {
 
     setLoading(true);
     const result = await signUp(formData);
-    // signUp redirects on success — only arrives here on error
+    // With email confirmation on, signUp returns { confirmEmail, email } rather
+    // than redirecting. With it off, it redirects and we never reach here.
     if (result?.error) {
       setError(result.error);
       setLoading(false);
+    } else if (result?.confirmEmail) {
+      setSentTo(result.email ?? (formData.get("email") as string));
+      setLoading(false);
     }
+  }
+
+  async function handleResend() {
+    if (!sentTo) return;
+    setResending(true);
+    setResendMsg(null);
+    const result = await resendConfirmation(sentTo);
+    setResendMsg(result?.error ?? result?.success ?? null);
+    setResending(false);
+  }
+
+  if (sentTo) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <Card className="w-full max-w-md glass-card">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/20">
+              <MailCheck className="h-6 w-6 text-primary" />
+            </div>
+            <CardTitle className="text-2xl">Confirm your email</CardTitle>
+            <CardDescription>
+              We sent a confirmation link to{" "}
+              <span className="font-medium text-foreground">{sentTo}</span>.
+              Click it to activate your account, then sign in.
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="space-y-3">
+            {resendMsg && (
+              <div className="rounded-md bg-muted px-4 py-3 text-sm text-muted-foreground">
+                {resendMsg}
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground text-center leading-relaxed">
+              Didn&apos;t get it? Check your spam folder, or resend the link.
+            </p>
+          </CardContent>
+
+          <CardFooter className="flex flex-col gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={handleResend}
+              disabled={resending}
+            >
+              {resending ? "Resending…" : "Resend confirmation email"}
+            </Button>
+            <button
+              type="button"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              onClick={() => router.push("/login")}
+            >
+              Back to <span className="text-primary font-medium">Sign in</span>
+            </button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
   }
 
   return (

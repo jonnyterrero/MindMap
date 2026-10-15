@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { signIn } from "./actions";
+import { signIn, resendConfirmation } from "./actions";
 import { Brain } from "lucide-react";
 import {
   Card,
@@ -21,16 +21,35 @@ export default function LoginPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  // When sign-in fails because the email isn't confirmed, hold the address so
+  // we can offer a resend button instead of a dead-end error.
+  const [unconfirmedEmail, setUnconfirmedEmail] = useState<string | null>(null);
+  const [resendMsg, setResendMsg] = useState<string | null>(null);
+  const [resending, setResending] = useState(false);
 
   async function handleSubmit(formData: FormData) {
     setError(null);
+    setResendMsg(null);
+    setUnconfirmedEmail(null);
     setLoading(true);
     const result = await signIn(formData);
     // signIn redirects on success — only arrives here on error
     if (result?.error) {
       setError(result.error);
+      if (result.needsConfirmation) {
+        setUnconfirmedEmail(result.email ?? (formData.get("email") as string));
+      }
       setLoading(false);
     }
+  }
+
+  async function handleResend() {
+    if (!unconfirmedEmail) return;
+    setResending(true);
+    setResendMsg(null);
+    const result = await resendConfirmation(unconfirmedEmail);
+    setResendMsg(result?.error ?? result?.success ?? null);
+    setResending(false);
   }
 
   return (
@@ -49,6 +68,22 @@ export default function LoginPage() {
             {error && (
               <div className="rounded-md bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
                 {error}
+                {unconfirmedEmail && (
+                  <button
+                    type="button"
+                    onClick={handleResend}
+                    disabled={resending}
+                    className="mt-2 block font-medium underline hover:no-underline disabled:opacity-60"
+                  >
+                    {resending ? "Resending…" : "Resend confirmation email"}
+                  </button>
+                )}
+              </div>
+            )}
+
+            {resendMsg && (
+              <div className="rounded-md bg-muted px-4 py-3 text-sm text-muted-foreground">
+                {resendMsg}
               </div>
             )}
 

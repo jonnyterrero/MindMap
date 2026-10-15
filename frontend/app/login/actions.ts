@@ -28,6 +28,19 @@ export async function signIn(formData: FormData) {
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
+    // A user whose email isn't confirmed yet can't sign in. Supabase surfaces
+    // this as the `email_not_confirmed` code (older versions fold it into the
+    // generic "Invalid login credentials"). Give these users a clear message
+    // and a flag so the login page can offer to resend the confirmation link,
+    // instead of leaving them staring at "invalid credentials" after signup.
+    if (error.code === "email_not_confirmed") {
+      return {
+        error:
+          "Your email isn't confirmed yet. Check your inbox for the confirmation link — we can resend it below.",
+        needsConfirmation: true,
+        email,
+      };
+    }
     // Return error message to show in the form
     return { error: error.message };
   }
@@ -49,7 +62,7 @@ export async function signUp(formData: FormData) {
   const password = formData.get("password") as string;
 
   const origin = await getAppOrigin();
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -61,17 +74,52 @@ export async function signUp(formData: FormData) {
     return { error: error.message };
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (user) await captureServerEvent(user.id, AnalyticsEvent.SignedUp);
+  // When "Confirm email" is enabled in Supabase, signUp creates the user but
+  // returns NO session — the account isn't usable until the email link is
+  // clicked. Redirecting to /home here (as this did before) dropped the user
+  // into a route with no auth cookie, so the (app) layout immediately bounced
+  // them back to /login and left the client router cache stale (the "had to
+  // refresh for the page to load" symptom). Instead, tell the UI to show a
+  // "check your inbox" state and stop.
+  //
+  // This branch also covers Supabase's email-enumeration guard: signing up an
+  // address that already exists returns a user with no session and no error.
+  // Showing the same confirmation screen avoids leaking which emails are
+  // registered.
+  if (!data.session) {
+    if (data.user) await captureServerEvent(data.user.id, AnalyticsEvent.SignedUp);
+    return { confirmEmail: true, email };
+  }
 
-  // If email confirmation is disabled in Supabase, this redirects immediately.
-  // If enabled, user gets a confirmation email and lands here after clicking it.
+  // Confirmation disabled — a real session exists, so the user is signed in.
   // Home is the daily hub; the app layout still sends new accounts through
   // consent and onboarding before they can stay there.
+  if (data.user) await captureServerEvent(data.user.id, AnalyticsEvent.SignedUp);
   revalidatePath("/", "layout");
   redirect("/home");
+}
+
+// ─── Resend Confirmation Email ───────────────────────────────────────────────
+export async function resendConfirmation(email: string) {
+  if (!email) return { error: "Email is required." };
+
+  const supabase = await createClient();
+  const origin = await getAppOrigin();
+
+  const { error } = await supabase.auth.resend({
+    type: "signup",
+    email,
+    options: { emailRedirectTo: `${origin}/auth/confirm` },
+  });
+
+  if (error) return { error: error.message };
+
+  // Same neutral message whether or not the address has a pending signup, so
+  // this doesn't leak which emails are registered.
+  return {
+    success:
+      "If that account needs confirming, we've sent a new link. Check your inbox (and spam).",
+  };
 }
 
 // ─── Sign Out ─────────────────────────────────────────────────────────────────
