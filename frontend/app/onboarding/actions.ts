@@ -59,6 +59,8 @@ export async function completeOnboarding(input: {
     card_count: cards.length,
   });
 
-  // On success this throws NEXT_REDIRECT and never returns.
-  redirect("/today");
+  // On success this throws NEXT_REDIRECT and never returns. Hand off to the
+  // next-steps screen (daily loop + trust/support links) rather than dropping
+  // straight into the check-in — see DEVELOPMENT_PLAN 0.7.
+  redirect("/next-steps");
 }
