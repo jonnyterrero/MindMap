@@ -2,12 +2,16 @@
 
 import { useState, useTransition } from "react";
 import { exportUserData, deleteAccount } from "./data-privacy-actions";
+import { updateAnalyticsPreference } from "./actions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Download, Trash2, Loader2, ShieldCheck } from "lucide-react";
+import { ANALYTICS_CONSENT_CHANGED_EVENT } from "@/lib/analytics-consent";
 
-export function DataPrivacy() {
+export function DataPrivacy({ analyticsEnabled }: { analyticsEnabled: boolean }) {
   const [isPending, startTransition] = useTransition();
   const [exportErr, setExportErr] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
@@ -16,6 +20,8 @@ export function DataPrivacy() {
   const [confirmText, setConfirmText] = useState("");
   const [deleteErr, setDeleteErr] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [analyticsOn, setAnalyticsOn] = useState(analyticsEnabled);
+  const [analyticsErr, setAnalyticsErr] = useState<string | null>(null);
 
   function doExport() {
     setExportErr(null);
@@ -53,6 +59,23 @@ export function DataPrivacy() {
     });
   }
 
+  function toggleAnalytics(next: boolean) {
+    setAnalyticsOn(next);
+    setAnalyticsErr(null);
+    startTransition(async () => {
+      const result = await updateAnalyticsPreference(next);
+      if (result.error) {
+        setAnalyticsOn(!next);
+        setAnalyticsErr(result.error);
+        return;
+      }
+
+      window.dispatchEvent(
+        new CustomEvent(ANALYTICS_CONSENT_CHANGED_EVENT, { detail: next }),
+      );
+    });
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -65,6 +88,27 @@ export function DataPrivacy() {
       </CardHeader>
       <CardContent className="space-y-5">
         <div className="space-y-2">
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-1">
+              <Label htmlFor="analytics-toggle">Share de-identified usage analytics</Label>
+              <p id="analytics-description" className="text-xs text-muted-foreground">
+                Optional. Sends product and performance events with a pseudonymous
+                account ID, but no journal text, symptom values, or other personal
+                health data.
+              </p>
+            </div>
+            <Switch
+              id="analytics-toggle"
+              checked={analyticsOn}
+              onCheckedChange={toggleAnalytics}
+              disabled={isPending}
+              aria-describedby="analytics-description"
+            />
+          </div>
+          {analyticsErr && <p className="text-sm text-destructive">{analyticsErr}</p>}
+        </div>
+
+        <div className="space-y-2 border-t pt-4">
           <p className="text-sm font-medium">Export my data</p>
           <p className="text-xs text-muted-foreground">Download everything you&apos;ve logged as a JSON file.</p>
           <Button variant="outline" onClick={doExport} disabled={isPending}>

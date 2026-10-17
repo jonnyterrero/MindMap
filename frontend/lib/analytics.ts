@@ -10,6 +10,7 @@ export function captureEvent(
   properties?: AnalyticsProps,
 ): void {
   try {
+    if (!posthog.has_opted_in_capturing()) return
     posthog.capture(event, properties)
   } catch {
     // swallow
