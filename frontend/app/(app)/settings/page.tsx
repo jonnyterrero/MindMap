@@ -1,4 +1,4 @@
-import { getProfile } from "./actions";
+import { getAnalyticsPreference, getProfile } from "./actions";
 import { SettingsForm } from "./settings-form";
 import { AppearanceSettings } from "./appearance-settings";
 import { WeatherSettings } from "./weather-settings";
@@ -13,13 +13,14 @@ import { ReminderSettings } from "./reminder-settings";
 import { MedicalDisclaimer } from "@/components/medical-disclaimer";
 
 export default async function SettingsPage() {
-  const [profile, role, grants, sources, metrics, reminders] = await Promise.all([
+  const [profile, role, grants, sources, metrics, reminders, analyticsEnabled] = await Promise.all([
     getProfile(),
     getMyRole(),
     getMyGrants(),
     getWearableSources(),
     getRecentMetrics(),
     getReminders(),
+    getAnalyticsPreference(),
   ]);
 
   return (
@@ -40,7 +41,7 @@ export default async function SettingsPage() {
       <WearableSettings sources={sources} recentMetrics={metrics} />
       <AiSettings enabled={Boolean(profile?.ai_reflection_enabled)} />
       <ProviderSharing grants={grants} isProvider={role === "provider"} />
-      <DataPrivacy />
+      <DataPrivacy analyticsEnabled={analyticsEnabled} />
       <MedicalDisclaimer variant="full" />
     </div>
   );
