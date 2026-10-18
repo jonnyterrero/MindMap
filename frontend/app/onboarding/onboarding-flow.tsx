@@ -246,7 +246,7 @@ export function OnboardingFlow() {
           </Button>
         ) : (
           <Button onClick={finish} disabled={isPending} className="flex-1" size="lg">
-            {isPending ? <Loader2 className="animate-spin" /> : "Start Day 1 Check-In"}
+            {isPending ? <Loader2 className="animate-spin" /> : "Finish setup"}
           </Button>
         )}
       </div>
