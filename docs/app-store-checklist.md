@@ -23,6 +23,9 @@ shell loading `https://getmindmapplus.app`.
 
 ## 2. Mac-side build steps (cannot be done on Windows)
 
+Parked 2026-09-09: no Mac available. Do not run `cap add ios` on Windows.
+Native scaffolding in §1 stays; resume this section when a Mac exists.
+
 ```bash
 cd frontend
 pnpm install

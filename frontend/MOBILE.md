@@ -23,6 +23,9 @@ normally loads `server.url`.
 
 ## One-time setup (on a Mac)
 
+Parked 2026-09-09: no Mac available. Leave this section until then; do not
+generate `ios/` on Windows. Config, resources, and PrivacyInfo already exist.
+
 Prerequisites:
 - **iOS:** macOS, Xcode + Command Line Tools, CocoaPods (`sudo gem install cocoapods`), an Apple Developer account.
 - **Android:** Android Studio + JDK 17, an Android SDK, a Google Play Developer account.
